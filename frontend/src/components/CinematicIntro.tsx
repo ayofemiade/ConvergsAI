@@ -424,20 +424,20 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 {phase === 'interface' && (
                     <motion.div
                         key="interface"
-                        className="relative z-10 flex flex-col items-center"
+                        className="fixed inset-0 z-10 flex flex-col items-center justify-between pt-4 pb-8 md:pt-8 md:pb-16 px-6"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ type: "spring", damping: 30, stiffness: 200 }}
                     >
-                        {/* Logo & Brand */}
+                        {/* Logo & Brand - Top Section */}
                         <motion.div
-                            className="mb-20 text-center space-y-6"
+                            className="text-center space-y-4 md:space-y-6 w-full max-w-2xl"
                         >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-blue-500/20 bg-blue-900/10 backdrop-blur-2xl mb-6"
+                                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-blue-500/20 bg-blue-900/10 backdrop-blur-2xl mb-1 md:mb-4"
                             >
                                 <motion.div
                                     className="w-2 h-2 bg-green-500 rounded-full"
@@ -453,7 +453,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             </motion.div>
 
                             <motion.h1
-                                className="text-6xl md:text-8xl font-bold tracking-tighter"
+                                className="text-5xl md:text-7xl font-bold tracking-tighter"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 }}
@@ -474,7 +474,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             </motion.h1>
 
                             <motion.p
-                                className="text-slate-400 max-w-md mx-auto text-sm leading-relaxed"
+                                className="text-slate-400 max-w-md mx-auto text-sm md:text-lg leading-relaxed mt-1"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.7 }}
@@ -485,126 +485,130 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             </motion.p>
                         </motion.div>
 
-                        {/* The Sacred Button */}
-                        <div className="relative">
-                            {/* Outer Glow Ring */}
-                            <motion.div
-                                className="absolute -inset-8 rounded-full"
-                                animate={{
-                                    background: [
-                                        'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)',
-                                        'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)',
-                                        'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)'
-                                    ]
-                                }}
-                                transition={{ duration: 3, repeat: Infinity }}
-                            />
-
-                            {/* Progress Ring SVG */}
-                            <svg className="w-56 h-56 -rotate-90 transform absolute -inset-4" viewBox="0 0 100 100">
-                                <defs>
-                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#3b82f6" />
-                                        <stop offset="100%" stopColor="#8b5cf6" />
-                                    </linearGradient>
-                                </defs>
-                                <circle
-                                    cx="50" cy="50" r="48"
-                                    stroke="rgba(255,255,255,0.05)"
-                                    strokeWidth="1"
-                                    fill="none"
-                                />
-                                <motion.circle
-                                    cx="50" cy="50" r="48"
-                                    stroke="url(#progressGradient)"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    fill="none"
-                                    style={{
-                                        pathLength: holdProgress / 100,
-                                        filter: 'drop-shadow(0 0 8px rgba(59,130,246,0.6))'
-                                    }}
-                                    transition={{ duration: 0.05 }}
-                                />
-                            </svg>
-
-                            {/* The Button Itself */}
-                            <motion.button
-                                style={{
-                                    scale: buttonScale,
-                                    rotateZ: buttonRotate
-                                }}
-                                onMouseDown={startHold}
-                                onMouseUp={stopHold}
-                                onMouseLeave={stopHold}
-                                onTouchStart={startHold}
-                                onTouchEnd={stopHold}
-                                className="relative w-48 h-48 rounded-full bg-gradient-to-br from-slate-900 via-slate-800 to-black border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-3 group cursor-pointer overflow-hidden transition-shadow duration-500 select-none touch-none"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                {/* Inner Animated Gradient */}
+                        {/* The Sacred Button - Mid Section */}
+                        <div className="relative flex items-center justify-center py-6 md:py-10">
+                            <div className="relative scale-[0.6] sm:scale-70 md:scale-80 lg:scale-90">
+                                {/* Outer Glow Ring */}
                                 <motion.div
-                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                    className="absolute -inset-8 rounded-full"
                                     animate={{
                                         background: [
-                                            'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.2) 0%, transparent 50%)',
-                                            'radial-gradient(circle at 50% 50%, rgba(139,92,246,0.2) 0%, transparent 50%)',
-                                            'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.2) 0%, transparent 50%)'
+                                            'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)',
+                                            'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)',
+                                            'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)'
                                         ]
                                     }}
                                     transition={{ duration: 3, repeat: Infinity }}
                                 />
 
-                                {/* Icon */}
-                                <motion.div
-                                    animate={isHolding ? {
-                                        scale: [1, 1.2, 1],
-                                        rotate: [0, 180, 360]
-                                    } : {}}
-                                    transition={{ duration: 0.6 }}
-                                >
-                                    <Zap
-                                        size={48}
-                                        className={`${isHolding ? 'text-blue-400' : 'text-white/70'} transition-colors fill-current drop-shadow-lg`}
+                                {/* Progress Ring SVG */}
+                                <svg className="w-56 h-56 -rotate-90 transform absolute -inset-4" viewBox="0 0 100 100">
+                                    <defs>
+                                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#3b82f6" />
+                                            <stop offset="100%" stopColor="#8b5cf6" />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle
+                                        cx="50" cy="50" r="48"
+                                        stroke="rgba(255,255,255,0.05)"
+                                        strokeWidth="1"
+                                        fill="none"
                                     />
-                                </motion.div>
+                                    <motion.circle
+                                        cx="50" cy="50" r="48"
+                                        stroke="url(#progressGradient)"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        fill="none"
+                                        style={{
+                                            pathLength: holdProgress / 100,
+                                            filter: 'drop-shadow(0 0 8px rgba(59,130,246,0.6))'
+                                        }}
+                                        transition={{ duration: 0.05 }}
+                                    />
+                                </svg>
 
-                                {/* Label */}
-                                <span className={`text-[11px] font-bold tracking-[0.3em] uppercase transition-all duration-300 ${isHolding ? 'text-blue-300' : 'text-slate-500'}`}>
-                                    {isHolding ? 'Connecting' : 'Hold to Answer'}
-                                </span>
+                                {/* The Button Itself */}
+                                <motion.button
+                                    style={{
+                                        scale: buttonScale,
+                                        rotateZ: buttonRotate
+                                    }}
+                                    onMouseDown={startHold}
+                                    onMouseUp={stopHold}
+                                    onMouseLeave={stopHold}
+                                    onTouchStart={startHold}
+                                    onTouchEnd={stopHold}
+                                    className="relative w-48 h-48 rounded-full bg-gradient-to-br from-slate-900 via-slate-800 to-black border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-3 group cursor-pointer overflow-hidden transition-shadow duration-500 select-none touch-none"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    {/* Inner Animated Gradient */}
+                                    <motion.div
+                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                                        animate={{
+                                            background: [
+                                                'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.2) 0%, transparent 50%)',
+                                                'radial-gradient(circle at 50% 50%, rgba(139,92,246,0.2) 0%, transparent 50%)',
+                                                'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.2) 0%, transparent 50%)'
+                                            ]
+                                        }}
+                                        transition={{ duration: 3, repeat: Infinity }}
+                                    />
 
-                                {/* Progress Percentage */}
-                                {isHolding && (
-                                    <motion.span
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="absolute bottom-6 text-blue-400 text-xs font-mono"
+                                    {/* Icon */}
+                                    <motion.div
+                                        animate={isHolding ? {
+                                            scale: [1, 1.2, 1],
+                                            rotate: [0, 180, 360]
+                                        } : {}}
+                                        transition={{ duration: 0.6 }}
                                     >
-                                        {Math.round(holdProgress)}%
-                                    </motion.span>
-                                )}
-                            </motion.button>
+                                        <Zap
+                                            size={48}
+                                            className={`${isHolding ? 'text-blue-400' : 'text-white/70'} transition-colors fill-current drop-shadow-lg`}
+                                        />
+                                    </motion.div>
+
+                                    {/* Label */}
+                                    <span className={`text-[11px] font-bold tracking-[0.3em] uppercase transition-all duration-300 ${isHolding ? 'text-blue-300' : 'text-slate-500'}`}>
+                                        {isHolding ? 'Connecting' : 'Hold to Answer'}
+                                    </span>
+
+                                    {/* Progress Percentage */}
+                                    {isHolding && (
+                                        <motion.span
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="absolute bottom-6 text-blue-400 text-xs font-mono"
+                                        >
+                                            {Math.round(holdProgress)}%
+                                        </motion.span>
+                                    )}
+                                </motion.button>
+                            </div>
                         </div>
 
-                        {/* Audio Visualizer Bars */}
-                        <div className="mt-16 flex gap-2">
-                            {Array.from({ length: 7 }).map((_, i) => (
-                                <motion.div
-                                    key={i}
-                                    className="w-1 bg-gradient-to-t from-blue-600 to-blue-400 rounded-full"
-                                    animate={{
-                                        height: [20, 40 + Math.random() * 20, 20],
-                                        opacity: [0.3, 1, 0.3]
-                                    }}
-                                    transition={{
-                                        duration: 1 + Math.random(),
-                                        repeat: Infinity,
-                                        delay: i * 0.1
-                                    }}
-                                />
-                            ))}
+                        {/* Footer Context - Bottom Section */}
+                        <div className="flex flex-col items-center gap-6 pb-4">
+                            <div className="flex gap-2">
+                                {Array.from({ length: 7 }).map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="w-1 bg-gradient-to-t from-blue-600 to-blue-400 rounded-full"
+                                        animate={{
+                                            height: [20, 40 + Math.random() * 20, 20],
+                                            opacity: [0.3, 1, 0.3]
+                                        }}
+                                        transition={{
+                                            duration: 1 + Math.random(),
+                                            repeat: Infinity,
+                                            delay: i * 0.1
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     </motion.div>
                 )}
