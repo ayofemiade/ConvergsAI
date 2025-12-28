@@ -424,7 +424,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 {phase === 'interface' && (
                     <motion.div
                         key="interface"
-                        className="fixed inset-0 z-10 flex flex-col items-center justify-between pt-4 pb-8 md:pt-8 md:pb-16 px-6"
+                        className="fixed inset-0 z-10 flex flex-col items-center justify-between pt-16 pb-12 md:pt-8 md:pb-16 px-6"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ type: "spring", damping: 30, stiffness: 200 }}
@@ -437,7 +437,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-blue-500/20 bg-blue-900/10 backdrop-blur-2xl mb-1 md:mb-4"
+                                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-blue-500/20 bg-blue-900/10 backdrop-blur-2xl mb-8 md:mb-4"
                             >
                                 <motion.div
                                     className="w-2 h-2 bg-green-500 rounded-full"
@@ -453,7 +453,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             </motion.div>
 
                             <motion.h1
-                                className="text-5xl md:text-7xl font-bold tracking-tighter"
+                                className="text-6xl md:text-7xl font-bold tracking-tighter"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 }}
@@ -474,7 +474,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             </motion.h1>
 
                             <motion.p
-                                className="text-slate-400 max-w-md mx-auto text-sm md:text-lg leading-relaxed mt-1"
+                                className="text-slate-400 max-w-md mx-auto text-sm md:text-lg leading-relaxed mt-4 md:mt-1"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.7 }}
@@ -486,8 +486,8 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                         </motion.div>
 
                         {/* The Sacred Button - Mid Section */}
-                        <div className="relative flex items-center justify-center py-6 md:py-10">
-                            <div className="relative scale-[0.6] sm:scale-70 md:scale-80 lg:scale-90">
+                        <div className="relative flex items-center justify-center py-4 md:py-10">
+                            <div className="relative scale-[0.85] sm:scale-75 md:scale-80 lg:scale-90">
                                 {/* Outer Glow Ring */}
                                 <motion.div
                                     className="absolute -inset-8 rounded-full"
