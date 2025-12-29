@@ -144,3 +144,37 @@ h6 {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Post-Paint Hero Animations */
+.hero-title-primary {
+  animation: settle 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-title-secondary {
+  opacity: 0;
+  animation: reveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+}
+
+@keyframes settle {
+  from {
+    transform: translateY(10px);
+    letter-spacing: -0.05em;
+  }
+
+  to {
+    transform: translateY(0);
+    letter-spacing: -0.03em;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

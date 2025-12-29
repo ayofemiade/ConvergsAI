@@ -165,7 +165,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                     </span>
                                 </>
                             ) : (
-                                <span className="text-xs font-medium text-slate-400">ConvergsAI Agent</span>
+                                <span className="text-xs font-medium text-slate-300">ConvergsAI Agent</span>
                             )}
                         </motion.div>
                     </div>
@@ -188,9 +188,13 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-white mb-2">Emma</h2>
-                                        <p className="text-slate-400">Top-performing AI Sales Agent</p>
+                                        <p className="text-slate-300 font-medium">Top-performing AI Sales Agent</p>
                                     </div>
-                                    <button onClick={startCall} className="btn-primary w-full max-w-xs py-4 text-lg flex items-center justify-center gap-3 group">
+                                    <button
+                                        onClick={startCall}
+                                        className="btn-primary w-full max-w-xs py-4 text-lg flex items-center justify-center gap-3 group"
+                                        aria-label="Start demo call with Emma"
+                                    >
                                         <Phone size={24} className="group-hover:rotate-12 transition-transform" />
                                         <span>Start Demo Call</span>
                                     </button>
@@ -216,7 +220,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                             <Phone size={40} className="text-white fill-white" />
                                         </div>
                                     </div>
-                                    <p className="text-lg text-slate-300 animate-pulse">Connecting to Emma...</p>
+                                    <p className="text-lg text-slate-200 animate-pulse font-medium">Connecting to Emma...</p>
                                 </motion.div>
                             )}
 
@@ -273,12 +277,14 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                                 onClick={sendMessage}
                                                 disabled={!inputText.trim() || isLoading}
                                                 className="p-3 bg-blue-600 rounded-xl text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                aria-label="Send message"
                                             >
                                                 <Send size={20} />
                                             </button>
                                             <button
                                                 onClick={endCall}
                                                 className="p-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors"
+                                                aria-label="End call"
                                             >
                                                 <PhoneOff size={20} />
                                             </button>
@@ -297,7 +303,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-white mb-2">Demo Completed</h3>
-                                        <p className="text-slate-400">Emma has qualified this lead.</p>
+                                        <p className="text-slate-300 font-medium">Emma has qualified this lead.</p>
                                     </div>
                                     <button onClick={() => setCallState('idle')} className="btn-secondary w-full">
                                         Start New Call
@@ -318,17 +324,17 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                             AI
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm text-white">Qualification Agent</h4>
-                            <p className="text-xs text-slate-400">Running on Llama 3 70B</p>
+                            <h2 className="font-bold text-sm text-white">Qualification Agent</h2>
+                            <p className="text-xs text-slate-300 font-medium">Running on Llama 3 70B</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-center text-xs">
                         <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-                            <div className="text-slate-400 mb-1">Latency</div>
+                            <div className="text-slate-300 mb-1">Latency</div>
                             <div className="text-green-400 font-mono">120ms</div>
                         </div>
                         <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-                            <div className="text-slate-400 mb-1">Sentiment</div>
+                            <div className="text-slate-300 mb-1">Sentiment</div>
                             <div className="text-blue-400 font-mono">Positive</div>
                         </div>
                     </div>
@@ -336,7 +342,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
 
                 {/* Qualification Tracker */}
                 <div className="flex-1 bg-slate-900/50 border border-white/10 rounded-2xl p-5 backdrop-blur-sm flex flex-col overflow-hidden">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Live Context Extraction</h4>
+                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Live Context Extraction</h2>
 
                     <div className="space-y-4 flex-1">
                         {[

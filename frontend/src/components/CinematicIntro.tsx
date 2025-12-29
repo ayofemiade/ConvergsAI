@@ -465,11 +465,11 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                                 </span>
                             </motion.div>
 
-                            <h2 className="text-4xl md:text-6xl font-light tracking-tight text-white">
+                            <h1 className="text-4xl md:text-6xl font-light tracking-tight text-white">
                                 Incoming <span className="font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Intelligence</span>
-                            </h2>
+                            </h1>
 
-                            <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+                            <p className="text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
                                 A moment that could redefine how your business operates is requesting connection.
                             </p>
                         </motion.div>
@@ -550,14 +550,14 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             </motion.h1>
 
                             <motion.p
-                                className="text-slate-400 max-w-md mx-auto text-sm md:text-lg leading-relaxed mt-4 md:mt-1"
+                                className="text-slate-300 max-w-md mx-auto text-sm md:text-lg leading-relaxed mt-4 md:mt-1 font-medium"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.7 }}
                             >
                                 The world's first multi-modal voice intelligence system
                                 <br />
-                                <span className="text-blue-400">is calling you.</span>
+                                <span className="text-blue-400 font-bold">is calling you.</span>
                             </motion.p>
                         </motion.div>
 
@@ -634,6 +634,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                                     className="relative w-48 h-48 rounded-full bg-gradient-to-br from-slate-900 via-slate-800 to-black border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-3 group cursor-pointer overflow-hidden transition-shadow duration-500 select-none touch-none"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    aria-label={isHolding ? `Connecting, ${Math.round(holdProgress)}% complete` : "Hold to answer call"}
                                 >
                                     {/* Inner Animated Gradient */}
                                     <motion.div

@@ -133,7 +133,7 @@ export default function LandingPage() {
                         <div className="w-8 h-8 relative">
                             <Image
                                 src="/logo.png"
-                                alt="ConvergsAI Logo"
+                                alt=""
                                 fill
                                 sizes="32px"
                                 priority
@@ -151,11 +151,16 @@ export default function LandingPage() {
                         <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
                         <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
                         <button className="text-white hover:text-blue-400 transition-colors">Log In</button>
-                        <button className="bg-white text-black hover:bg-slate-200 py-2 px-4 rounded-full font-bold transition-all transform hover:scale-105">Get Started</button>
+                        <button className="bg-white text-black hover:bg-slate-200 py-2 px-4 rounded-full font-bold transition-all transform hover:scale-105" aria-label="Get started with ConvergsAI">Get Started</button>
                     </div>
 
                     <div className="md:hidden">
-                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-300 hover:text-white transition-colors relative z-[70]">
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="p-2 text-slate-300 hover:text-white transition-colors relative z-[70]"
+                            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                            aria-expanded={mobileMenuOpen}
+                        >
                             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
                         </button>
                     </div>
@@ -210,12 +215,7 @@ export default function LandingPage() {
                 <div className="max-w-6xl mx-auto text-center relative z-10">
 
                     {/* Hero Text Content */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}
-                        className="space-y-8 flex flex-col items-center"
-                    >
+                    <div className="space-y-8 flex flex-col items-center">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5 text-blue-300 text-[10px] font-bold tracking-widest backdrop-blur-md hover:bg-white/10 transition-colors cursor-default uppercase">
                             <span className="relative flex h-1.5 w-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -225,15 +225,17 @@ export default function LandingPage() {
                         </div>
 
                         <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold leading-[1.0] tracking-[-0.03em] max-w-4xl mx-auto">
-                            Cut SDR Costs by 50% <br className="hidden md:block" />
-                            <span className="text-gradient-brand">— Scale Your Pipeline</span>
+                            <span className="hero-title-primary block">Cut SDR Costs by 50%</span>
+                            <span className="text-gradient-brand hero-title-secondary block mt-2 text-3xl sm:text-5xl lg:text-[4rem]">
+                                While Scaling Your Pipeline — Automatically
+                            </span>
                         </h1>
 
-                        <p className="text-base sm:text-lg lg:text-xl text-slate-400 leading-relaxed max-w-xl mx-auto font-medium">
+                        <p className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-xl mx-auto font-medium hero-title-secondary" style={{ animationDelay: '0.6s' }}>
                             ConvergsAI qualifies inbound leads and books real meetings with human-like voice intelligence. Built for mid-sized sales teams to scale without hiring.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full pt-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full pt-4 hero-title-secondary" style={{ animationDelay: '0.8s' }}>
                             <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold py-4 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_-10px_rgba(79,70,229,0.6)] hover:scale-105 transition-all duration-300 group flex items-center gap-2">
                                 Book a Demo
                                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
@@ -247,7 +249,7 @@ export default function LandingPage() {
                             </button>
                         </div>
 
-                        <div className="pt-8 flex items-center gap-4 text-slate-500 text-sm">
+                        <div className="pt-8 flex items-center gap-4 text-slate-500 text-sm hero-title-secondary" style={{ animationDelay: '1s' }}>
                             <div className="flex -space-x-2">
                                 {[1, 2, 3, 4].map(i => (
                                     <div key={i} className="w-8 h-8 rounded-full border-2 border-[#020617] bg-slate-800 flex items-center justify-center overflow-hidden">
@@ -257,7 +259,7 @@ export default function LandingPage() {
                             </div>
                             <span className="font-medium">Trusted by 200+ Revenue Teams</span>
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* 3D Dashboard Demo */}
                     <motion.div
@@ -359,6 +361,7 @@ export default function LandingPage() {
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.95 }}
                                     className="z-10 w-24 h-24 rounded-full bg-white text-black flex items-center justify-center shadow-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-500"
+                                    aria-label="Play product tour video"
                                 >
                                     <Zap size={32} fill="currentColor" />
                                 </motion.button>
@@ -368,7 +371,7 @@ export default function LandingPage() {
                                         <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 inline-block">
                                             Product Deep Dive
                                         </div>
-                                        <h3 className="text-2xl font-bold">Watch ConvergsAI in action (90s)</h3>
+                                        <h2 className="text-2xl font-bold">Watch ConvergsAI in action (90s)</h2>
                                     </div>
                                     <div className="hidden md:flex gap-4">
                                         <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Autopilot Mode: ON</div>
@@ -385,7 +388,7 @@ export default function LandingPage() {
                     <div className="max-w-7xl mx-auto px-6">
                         <div className="text-center max-w-3xl mx-auto mb-24">
                             <h2 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">One brain. <br /><span className="text-gradient-brand">Two modes.</span></h2>
-                            <p className="text-lg text-slate-400">Instantly switch your agent between aggressive sales hunting and empathetic customer support.</p>
+                            <p className="text-lg text-slate-300">Instantly switch your agent between aggressive sales hunting and empathetic customer support.</p>
                         </div>
 
                         <div className="relative grid md:grid-cols-3 gap-8">
@@ -438,6 +441,7 @@ export default function LandingPage() {
                 {/* Features Bgrid */}
                 <section id="features" className="py-24 relative">
                     <div className="max-w-7xl mx-auto px-6">
+                        <h2 className="sr-only">Core Features</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
 
                             {/* Support & Empathy Feature */}
@@ -451,7 +455,7 @@ export default function LandingPage() {
                                         <Heart className="text-indigo-400" />
                                     </div>
                                     <h3 className="text-3xl font-bold mb-4 tracking-tight">Empathy Engine™</h3>
-                                    <p className="text-slate-400 text-lg max-w-lg mb-8 font-medium">
+                                    <p className="text-slate-300 text-lg max-w-lg mb-8 font-medium">
                                         Customer support requires patience. Our agents detect frustration and adjust tone instantly, escalating only when absolutely necessary.
                                     </p>
                                     <div className="w-full h-48 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center justify-center relative overflow-hidden">
@@ -478,7 +482,7 @@ export default function LandingPage() {
                                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <BarChart3 className="w-10 h-10 text-purple-400 mb-4" />
                                 <h3 className="text-xl font-bold mb-2 tracking-tight">Never Lose a Lead</h3>
-                                <p className="text-slate-400 text-sm font-medium">Automatically push qualified leads and call transcripts directly to Salesforce, HubSpot, or Pipedrive.</p>
+                                <p className="text-slate-300 text-sm font-medium">Automatically push qualified leads and call transcripts directly to Salesforce, HubSpot, or Pipedrive.</p>
                             </motion.div>
 
                             {/* Languages */}
@@ -486,7 +490,7 @@ export default function LandingPage() {
                                 <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <Globe className="w-10 h-10 text-green-400 mb-4" />
                                 <h3 className="text-xl font-bold mb-2 tracking-tight">Global Zero-Rep Scale</h3>
-                                <p className="text-slate-400 text-sm font-medium">Expand your outbound reach globally without hiring locally. 30+ native accents available instantly.</p>
+                                <p className="text-slate-300 text-sm font-medium">Expand your outbound reach globally without hiring locally. 30+ native accents available instantly.</p>
                             </motion.div>
 
                         </div>
@@ -495,8 +499,8 @@ export default function LandingPage() {
                         <div className="mt-24 max-w-5xl mx-auto glass-premium p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-[2.5rem]">
                             <div className="bg-slate-950 rounded-[2.4rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 h-full">
                                 <div className="space-y-4 text-center md:text-left">
-                                    <h3 className="text-3xl font-bold tracking-tight">Calculate Your Sales ROI</h3>
-                                    <p className="text-slate-400 max-w-sm">Discover exactly how much revenue you're leaving on the table by missing speed-to-lead.</p>
+                                    <h2 className="text-3xl font-bold tracking-tight">Calculate Your Sales ROI</h2>
+                                    <p className="text-slate-300 max-w-sm">Discover exactly how much revenue you're leaving on the table by missing speed-to-lead.</p>
                                 </div>
                                 <div className="flex flex-col gap-3 w-full md:w-auto">
                                     <button className="whitespace-nowrap px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-xl">
@@ -546,7 +550,7 @@ export default function LandingPage() {
                     <div className="max-w-7xl mx-auto px-6 relative z-10">
                         <div className="text-center max-w-3xl mx-auto mb-20">
                             <h2 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">Transparent <span className="text-gradient-brand">pricing</span></h2>
-                            <p className="text-slate-400 text-lg">One subscription for both sales and support agents.</p>
+                            <p className="text-slate-300 text-lg">One subscription for both sales and support agents.</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -590,19 +594,22 @@ export default function LandingPage() {
                                     <button
                                         onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                                         className="w-full flex items-center justify-between p-6 text-left"
+                                        aria-expanded={activeFaq === i}
+                                        aria-controls={`faq-answer-${i}`}
                                     >
-                                        <span className="font-medium text-lg">{faq.q}</span>
-                                        {activeFaq === i ? <ChevronUp size={20} className="text-blue-400" /> : <ChevronDown size={20} className="text-slate-500" />}
+                                        <span className="font-medium text-lg text-white">{faq.q}</span>
+                                        {activeFaq === i ? <ChevronUp size={20} className="text-blue-400" /> : <ChevronDown size={20} className="text-slate-400" />}
                                     </button>
                                     <AnimatePresence>
                                         {activeFaq === i && (
                                             <motion.div
+                                                id={`faq-answer-${i}`}
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
                                                 className="overflow-hidden"
                                             >
-                                                <div className="p-6 pt-0 text-slate-400 leading-relaxed border-t border-white/5 mt-2 font-medium">
+                                                <div className="p-6 pt-0 text-slate-300 leading-relaxed border-t border-white/5 mt-2 font-medium">
                                                     {faq.a}
                                                 </div>
                                             </motion.div>
@@ -621,7 +628,7 @@ export default function LandingPage() {
 
                     <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
                         <h2 className="text-5xl lg:text-7xl font-bold mb-8 tracking-tight">Scale Your <span className="text-gradient-brand">Sales Pipeline Today</span></h2>
-                        <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto font-medium">
+                        <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto font-medium">
                             Join 200+ high-growth revenue teams using ConvergsAI to automate meetings and qualify leads 24/7.
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -644,8 +651,12 @@ export default function LandingPage() {
                         </div>
                         <p className="mb-6 leading-relaxed font-medium">Automating the future of sales conversations & support tickets with human-like AI.</p>
                         <div className="flex gap-4">
-                            <div className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-white/5" />
-                            <div className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-white/5" />
+                            <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-white/5 flex items-center justify-center" aria-label="Visit our Twitter">
+                                <span className="sr-only">Twitter</span>
+                            </button>
+                            <button className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-white/5 flex items-center justify-center" aria-label="Visit our LinkedIn">
+                                <span className="sr-only">LinkedIn</span>
+                            </button>
                         </div>
                     </div>
                     <div>
