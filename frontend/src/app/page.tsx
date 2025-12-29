@@ -2,15 +2,22 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import PhoneCallUI from '@/components/PhoneCallUI';
-import Background3D from '@/components/Background3D';
-import CinematicIntro from '@/components/CinematicIntro';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 import {
     CheckCircle2, Zap, Globe, Shield, BarChart3, Clock, ArrowRight, Menu, X,
     Phone, Settings, Link as LinkIcon, Mic, ChevronDown, ChevronUp, Star,
     Headphones, MessageCircle, Heart, Users
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+
+// Dynamic imports for sub-fold components
+const Background3D = dynamic(() => import('@/components/Background3D'), { ssr: false });
+const CinematicIntro = dynamic(() => import('@/components/CinematicIntro'), { ssr: false });
+const PhoneCallUI = dynamic(() => import('@/components/PhoneCallUI'), {
+    ssr: false,
+    loading: () => <div className="h-[600px] w-full bg-slate-900/20 animate-pulse rounded-[2.5rem]" />
+});
 
 // Pricing Data
 const pricingPlans = [
@@ -123,8 +130,15 @@ export default function LandingPage() {
             <nav className="fixed w-full z-50 transition-all duration-300 top-0 pt-4 px-4">
                 <div className="max-w-7xl mx-auto glass-premium rounded-2xl h-16 flex items-center justify-between px-6">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <img src="/logo.png" alt="ConvergsAI" className="w-full h-full object-contain rounded-lg" />
+                        <div className="w-8 h-8 relative">
+                            <Image
+                                src="/logo.png"
+                                alt="ConvergsAI Logo"
+                                fill
+                                sizes="32px"
+                                priority
+                                className="object-contain"
+                            />
                         </div>
                         <span className="text-lg font-bold tracking-tight">ConvergsAI</span>
                     </div>
@@ -180,12 +194,18 @@ export default function LandingPage() {
                 onMouseLeave={handleMouseLeave}
                 className="relative pt-32 pb-20 lg:pt-48 lg:pb-40 overflow-visible px-4 sm:px-6 perspective-1000"
             >
-                {/* 3D Moving Background */}
-                <Background3D />
+                {/* Optimized Background Loading */}
+                <div className="absolute inset-0 z-0">
+                    <div className="hidden md:block h-full w-full">
+                        <Background3D />
+                    </div>
+                    {/* Mobile Fallback: High-performance CSS gradient + grain instead of canvas */}
+                    <div className="md:hidden absolute inset-0 bg-[#020617] bg-[radial-gradient(circle_at_50%_40%,rgba(29,78,216,0.15)_0%,transparent_70%)] opacity-50" />
+                </div>
 
-                {/* Spotlights */}
-                <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen animate-pulse" />
-                <div className="absolute top-[20%] right-[20%] w-[400px] h-[400px] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none -z-10 mix-blend-screen delay-1000 animate-pulse" />
+                {/* Spotlights - Defer on mobile */}
+                <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen animate-pulse hidden md:block" />
+                <div className="absolute top-[20%] right-[20%] w-[400px] h-[400px] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none -z-10 mix-blend-screen delay-1000 animate-pulse hidden md:block" />
 
                 <div className="max-w-6xl mx-auto text-center relative z-10">
 
@@ -286,7 +306,7 @@ export default function LandingPage() {
 
                             {/* Dashboard Container with depth */}
                             <div className="glass-premium rounded-[2.5rem] p-2 ring-1 ring-white/10 shadow-2xl relative bg-[#0B1120]/80 backdrop-blur-2xl translate-z-10">
-                                <div className="rounded-[2rem] overflow-hidden border border-white/5 bg-[#020617] relative">
+                                <div className="rounded-[2rem] overflow-hidden border border-white/5 bg-[#020617] relative h-[450px] md:h-auto">
                                     {/* Reflection overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-20 pointer-events-none z-20" />
                                     <PhoneCallUI />
@@ -297,320 +317,329 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Social Proof - Infinite Scroll */}
-            <section className="py-12 border-y border-white/5 bg-slate-950/50 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-[0.2em]">Trusted by revenue teams at</p>
-                    <div className="relative w-full overflow-hidden mask-gradient">
-                        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-[#020617] to-transparent z-10" />
-                        <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-[#020617] to-transparent z-10" />
+            {/* Below-the-fold sections wrapped in whileInView for lazy mounting effect */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "200px" }}
+                transition={{ duration: 0.5 }}
+            >
+                <section className="py-12 border-y border-white/5 bg-slate-950/50 backdrop-blur-sm">
+                    <div className="max-w-7xl mx-auto px-6 text-center">
+                        <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-[0.2em]">Trusted by revenue teams at</p>
+                        <div className="relative w-full overflow-hidden mask-gradient">
+                            <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-[#020617] to-transparent z-10" />
+                            <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-[#020617] to-transparent z-10" />
 
-                        <div className="flex w-max gap-20 animate-marquee hover:[animation-play-state:paused] opacity-60 items-center">
-                            {[...Array(4)].map((_, groupIndex) => (
-                                <div key={groupIndex} className="flex gap-20 shrink-0">
-                                    {['Zendesk', 'Salesforce', 'HubSpot', 'Intercom', 'Shopify', 'Freshdesk'].map((brand, i) => (
-                                        <span key={i} className="text-3xl font-bold font-serif text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-500 hover:to-white transition-colors cursor-default tracking-tight">
-                                            {brand}
-                                        </span>
-                                    ))}
+                            <div className="flex w-max gap-20 animate-marquee hover:[animation-play-state:paused] opacity-60 items-center">
+                                {[...Array(4)].map((_, groupIndex) => (
+                                    <div key={groupIndex} className="flex gap-20 shrink-0">
+                                        {['Zendesk', 'Salesforce', 'HubSpot', 'Intercom', 'Shopify', 'Freshdesk'].map((brand, i) => (
+                                            <span key={i} className="text-3xl font-bold font-serif text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-500 hover:to-white transition-colors cursor-default tracking-tight">
+                                                {brand}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Product Tour Section - NEW */}
+                <section className="py-24 relative overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <div className="glass-premium rounded-[3rem] aspect-video w-full relative overflow-hidden group shadow-2xl shadow-blue-500/10 border border-white/10">
+                            {/* Fake UI/Video Background */}
+                            <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                                <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2070')] bg-cover bg-center" />
+                                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="z-10 w-24 h-24 rounded-full bg-white text-black flex items-center justify-center shadow-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-500"
+                                >
+                                    <Zap size={32} fill="currentColor" />
+                                </motion.button>
+
+                                <div className="absolute bottom-12 left-12 right-12 flex items-end justify-between z-10">
+                                    <div className="space-y-2">
+                                        <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 inline-block">
+                                            Product Deep Dive
+                                        </div>
+                                        <h3 className="text-2xl font-bold">Watch ConvergsAI in action (90s)</h3>
+                                    </div>
+                                    <div className="hidden md:flex gap-4">
+                                        <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Autopilot Mode: ON</div>
+                                        <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Accuracy: 99.8%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* How It Works - Connected Steps */}
+                <section id="how-it-works" className="py-32 relative">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <div className="text-center max-w-3xl mx-auto mb-24">
+                            <h2 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">One brain. <br /><span className="text-gradient-brand">Two modes.</span></h2>
+                            <p className="text-lg text-slate-400">Instantly switch your agent between aggressive sales hunting and empathetic customer support.</p>
+                        </div>
+
+                        <div className="relative grid md:grid-cols-3 gap-8">
+                            {/* Connecting Line */}
+                            <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0 dashed" />
+
+                            {[
+                                {
+                                    step: "01",
+                                    title: "Sync Your Pipeline",
+                                    desc: "Connect ConvergsAI to your CRM and training docs in under 5 minutes.",
+                                    icon: <LinkIcon className="text-blue-400" size={24} />
+                                },
+                                {
+                                    step: "02",
+                                    title: "Define Your Hunter",
+                                    desc: "Tell the AI exactly what 'Qualified' looks like for your business.",
+                                    icon: <Settings className="text-indigo-400" size={24} />
+                                },
+                                {
+                                    step: "03",
+                                    title: "Scale Real Meetings",
+                                    desc: "Deploy your agent to handle inbound speed-to-lead and outbound booking.",
+                                    icon: <Zap className="text-purple-400" size={24} />
+                                }
+                            ].map((step, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: i * 0.2 }}
+                                    className="relative z-10 flex flex-col items-center text-center"
+                                >
+                                    <div className="w-24 h-24 rounded-3xl glass-premium flex items-center justify-center mb-8 relative group cursor-pointer hover:scale-105 transition-transform duration-300 ring-1 ring-white/10 hover:ring-blue-500/50">
+                                        <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        {step.icon}
+                                        <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-xs font-bold font-mono">
+                                            {step.step}
+                                        </div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold mb-4 tracking-tight">{step.title}</h3>
+                                    <p className="text-slate-400 leading-relaxed max-w-xs font-medium">{step.desc}</p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Features Bgrid */}
+                <section id="features" className="py-24 relative">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
+
+                            {/* Support & Empathy Feature */}
+                            <motion.div
+                                whileHover={{ y: -5 }}
+                                className="md:col-span-2 md:row-span-2 glass-premium rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative group"
+                            >
+                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                                <div className="relative z-10">
+                                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center mb-6">
+                                        <Heart className="text-indigo-400" />
+                                    </div>
+                                    <h3 className="text-3xl font-bold mb-4 tracking-tight">Empathy Engine™</h3>
+                                    <p className="text-slate-400 text-lg max-w-lg mb-8 font-medium">
+                                        Customer support requires patience. Our agents detect frustration and adjust tone instantly, escalating only when absolutely necessary.
+                                    </p>
+                                    <div className="w-full h-48 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center justify-center relative overflow-hidden">
+                                        {/* Fake Sentiment Visualizer */}
+                                        <div className="flex flex-col gap-2 items-center">
+                                            <div className="flex items-center gap-1">
+                                                {[...Array(20)].map((_, i) => (
+                                                    <motion.div
+                                                        key={i}
+                                                        className="w-2 bg-indigo-500 rounded-full"
+                                                        animate={{ height: [15, 40 + Math.random() * 40, 15] }}
+                                                        transition={{ duration: 0.8 + Math.random() * 0.5, repeat: Infinity }}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="text-xs font-mono text-indigo-300">SENTIMENT: POSITIVE (98%)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* CRM Sync */}
+                            <motion.div whileHover={{ y: -5 }} className="glass-premium rounded-[2.5rem] p-8 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <BarChart3 className="w-10 h-10 text-purple-400 mb-4" />
+                                <h3 className="text-xl font-bold mb-2 tracking-tight">Never Lose a Lead</h3>
+                                <p className="text-slate-400 text-sm font-medium">Automatically push qualified leads and call transcripts directly to Salesforce, HubSpot, or Pipedrive.</p>
+                            </motion.div>
+
+                            {/* Languages */}
+                            <motion.div whileHover={{ y: -5 }} className="glass-premium rounded-[2.5rem] p-8 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Globe className="w-10 h-10 text-green-400 mb-4" />
+                                <h3 className="text-xl font-bold mb-2 tracking-tight">Global Zero-Rep Scale</h3>
+                                <p className="text-slate-400 text-sm font-medium">Expand your outbound reach globally without hiring locally. 30+ native accents available instantly.</p>
+                            </motion.div>
+
+                        </div>
+
+                        {/* ROI Lead Magnet */}
+                        <div className="mt-24 max-w-5xl mx-auto glass-premium p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-[2.5rem]">
+                            <div className="bg-slate-950 rounded-[2.4rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 h-full">
+                                <div className="space-y-4 text-center md:text-left">
+                                    <h3 className="text-3xl font-bold tracking-tight">Calculate Your Sales ROI</h3>
+                                    <p className="text-slate-400 max-w-sm">Discover exactly how much revenue you're leaving on the table by missing speed-to-lead.</p>
+                                </div>
+                                <div className="flex flex-col gap-3 w-full md:w-auto">
+                                    <button className="whitespace-nowrap px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-xl">
+                                        Download ROI Framework (PDF)
+                                    </button>
+                                    <div className="text-center text-xs text-slate-500 font-medium italic">Join 1,200+ Sales Ops leaders</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Testimonials */}
+                <section className="py-24 relative border-t border-white/5">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <h2 className="text-3xl lg:text-5xl font-bold text-center mb-16 tracking-tight">Loved by Support & Sales VPs</h2>
+                        <div className="grid md:grid-cols-3 gap-8">
+                            {[
+                                { name: "Sarah Jenkins", role: "VP of Sales, TechFlow", text: "We replaced our entire tier-1 SDR team with ConvergsAI. Connection rates up 40%." },
+                                { name: "David Chen", role: "Head of Support, CloudScale", text: "It resolved 60% of tickets without human intervention. Our CSAT score actually went UP." },
+                                { name: "Jessica Lee", role: "Director of Ops, ScaleUp", text: "Finally, an AI that handles both sales booking and support triage in one phone number." }
+                            ].map((t, i) => (
+                                <div key={i} className="glass-premium p-8 rounded-3xl relative hover:bg-white/5 transition-colors">
+                                    <div className="absolute -top-4 -left-4 text-6xl font-serif text-white/10">"</div>
+                                    <div className="flex gap-1 text-yellow-500 mb-6 relative z-10">
+                                        {[...Array(5)].map((_, j) => <Star key={j} size={16} fill="currentColor" />)}
+                                    </div>
+                                    <p className="text-lg text-slate-300 mb-6 leading-relaxed relative z-10 font-medium">{t.text}</p>
+                                    <div className="flex items-center gap-3 border-t border-white/5 pt-4">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center font-bold text-white text-sm">
+                                            {t.name[0]}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-sm">{t.name}</div>
+                                            <div className="text-xs text-slate-500">{t.role}</div>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Product Tour Section - NEW */}
-            <section className="py-24 relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="glass-premium rounded-[3rem] aspect-video w-full relative overflow-hidden group shadow-2xl shadow-blue-500/10 border border-white/10">
-                        {/* Fake UI/Video Background */}
-                        <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                            <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2070')] bg-cover bg-center" />
-                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="z-10 w-24 h-24 rounded-full bg-white text-black flex items-center justify-center shadow-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-500"
-                            >
-                                <Zap size={32} fill="currentColor" />
-                            </motion.button>
-
-                            <div className="absolute bottom-12 left-12 right-12 flex items-end justify-between z-10">
-                                <div className="space-y-2">
-                                    <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 inline-block">
-                                        Product Deep Dive
-                                    </div>
-                                    <h3 className="text-2xl font-bold">Watch ConvergsAI in action (90s)</h3>
-                                </div>
-                                <div className="hidden md:flex gap-4">
-                                    <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Autopilot Mode: ON</div>
-                                    <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Accuracy: 99.8%</div>
-                                </div>
-                            </div>
+                {/* Pricing */}
+                <section id="pricing" className="py-32 relative">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent pointer-events-none" />
+                    <div className="max-w-7xl mx-auto px-6 relative z-10">
+                        <div className="text-center max-w-3xl mx-auto mb-20">
+                            <h2 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">Transparent <span className="text-gradient-brand">pricing</span></h2>
+                            <p className="text-slate-400 text-lg">One subscription for both sales and support agents.</p>
                         </div>
-                    </div>
-                </div>
-            </section>
 
-            {/* How It Works - Connected Steps */}
-            <section id="how-it-works" className="py-32 relative">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center max-w-3xl mx-auto mb-24">
-                        <h2 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">One brain. <br /><span className="text-gradient-brand">Two modes.</span></h2>
-                        <p className="text-lg text-slate-400">Instantly switch your agent between aggressive sales hunting and empathetic customer support.</p>
-                    </div>
-
-                    <div className="relative grid md:grid-cols-3 gap-8">
-                        {/* Connecting Line */}
-                        <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0 dashed" />
-
-                        {[
-                            {
-                                step: "01",
-                                title: "Sync Your Pipeline",
-                                desc: "Connect ConvergsAI to your CRM and training docs in under 5 minutes.",
-                                icon: <LinkIcon className="text-blue-400" size={24} />
-                            },
-                            {
-                                step: "02",
-                                title: "Define Your Hunter",
-                                desc: "Tell the AI exactly what 'Qualified' looks like for your business.",
-                                icon: <Settings className="text-indigo-400" size={24} />
-                            },
-                            {
-                                step: "03",
-                                title: "Scale Real Meetings",
-                                desc: "Deploy your agent to handle inbound speed-to-lead and outbound booking.",
-                                icon: <Zap className="text-purple-400" size={24} />
-                            }
-                        ].map((step, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.2 }}
-                                className="relative z-10 flex flex-col items-center text-center"
-                            >
-                                <div className="w-24 h-24 rounded-3xl glass-premium flex items-center justify-center mb-8 relative group cursor-pointer hover:scale-105 transition-transform duration-300 ring-1 ring-white/10 hover:ring-blue-500/50">
-                                    <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    {step.icon}
-                                    <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-xs font-bold font-mono">
-                                        {step.step}
-                                    </div>
-                                </div>
-                                <h3 className="text-2xl font-bold mb-4 tracking-tight">{step.title}</h3>
-                                <p className="text-slate-400 leading-relaxed max-w-xs font-medium">{step.desc}</p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Features Bgrid */}
-            <section id="features" className="py-24 relative">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
-
-                        {/* Support & Empathy Feature */}
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="md:col-span-2 md:row-span-2 glass-premium rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative group"
-                        >
-                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
-                            <div className="relative z-10">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center mb-6">
-                                    <Heart className="text-indigo-400" />
-                                </div>
-                                <h3 className="text-3xl font-bold mb-4 tracking-tight">Empathy Engine™</h3>
-                                <p className="text-slate-400 text-lg max-w-lg mb-8 font-medium">
-                                    Customer support requires patience. Our agents detect frustration and adjust tone instantly, escalating only when absolutely necessary.
-                                </p>
-                                <div className="w-full h-48 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center justify-center relative overflow-hidden">
-                                    {/* Fake Sentiment Visualizer */}
-                                    <div className="flex flex-col gap-2 items-center">
-                                        <div className="flex items-center gap-1">
-                                            {[...Array(20)].map((_, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    className="w-2 bg-indigo-500 rounded-full"
-                                                    animate={{ height: [15, 40 + Math.random() * 40, 15] }}
-                                                    transition={{ duration: 0.8 + Math.random() * 0.5, repeat: Infinity }}
-                                                />
-                                            ))}
+                        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                            {pricingPlans.map((plan, i) => (
+                                <div key={i} className={`relative p-10 rounded-[2rem] border transition-all duration-300 hover:scale-[1.02] ${plan.highlight ? 'bg-slate-900/80 border-blue-500/50 shadow-2xl shadow-blue-900/20' : 'glass-premium border-white/5'}`}>
+                                    {plan.highlight && (
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg shadow-blue-500/40">
+                                            Best Value
                                         </div>
-                                        <div className="text-xs font-mono text-indigo-300">SENTIMENT: POSITIVE (98%)</div>
+                                    )}
+                                    <h3 className="text-xl font-bold mb-2 tracking-tight">{plan.name}</h3>
+                                    <div className="flex items-baseline gap-1 mb-6">
+                                        <span className="text-4xl font-bold">{plan.price}</span>
+                                        <span className="text-slate-500">{plan.period}</span>
                                     </div>
+                                    <p className="text-sm text-slate-400 mb-8 font-medium">{plan.desc}</p>
+                                    <button className={`w-full py-4 rounded-xl font-bold mb-8 transition-all ${plan.highlight ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'}`}>
+                                        {plan.cta}
+                                    </button>
+                                    <ul className="space-y-4">
+                                        {plan.features.map((f, j) => (
+                                            <li key={j} className="flex items-center gap-3 text-sm text-slate-300 font-medium">
+                                                <CheckCircle2 size={16} className={plan.highlight ? 'text-blue-400' : 'text-slate-500'} />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
-                            </div>
-                        </motion.div>
-
-                        {/* CRM Sync */}
-                        <motion.div whileHover={{ y: -5 }} className="glass-premium rounded-[2.5rem] p-8 relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <BarChart3 className="w-10 h-10 text-purple-400 mb-4" />
-                            <h3 className="text-xl font-bold mb-2 tracking-tight">Never Lose a Lead</h3>
-                            <p className="text-slate-400 text-sm font-medium">Automatically push qualified leads and call transcripts directly to Salesforce, HubSpot, or Pipedrive.</p>
-                        </motion.div>
-
-                        {/* Languages */}
-                        <motion.div whileHover={{ y: -5 }} className="glass-premium rounded-[2.5rem] p-8 relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Globe className="w-10 h-10 text-green-400 mb-4" />
-                            <h3 className="text-xl font-bold mb-2 tracking-tight">Global Zero-Rep Scale</h3>
-                            <p className="text-slate-400 text-sm font-medium">Expand your outbound reach globally without hiring locally. 30+ native accents available instantly.</p>
-                        </motion.div>
-
-                    </div>
-
-                    {/* ROI Lead Magnet */}
-                    <div className="mt-24 max-w-5xl mx-auto glass-premium p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-[2.5rem]">
-                        <div className="bg-slate-950 rounded-[2.4rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 h-full">
-                            <div className="space-y-4 text-center md:text-left">
-                                <h3 className="text-3xl font-bold tracking-tight">Calculate Your Sales ROI</h3>
-                                <p className="text-slate-400 max-w-sm">Discover exactly how much revenue you're leaving on the table by missing speed-to-lead.</p>
-                            </div>
-                            <div className="flex flex-col gap-3 w-full md:w-auto">
-                                <button className="whitespace-nowrap px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-xl">
-                                    Download ROI Framework (PDF)
-                                </button>
-                                <div className="text-center text-xs text-slate-500 font-medium italic">Join 1,200+ Sales Ops leaders</div>
-                            </div>
+                            ))}
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Testimonials */}
-            <section className="py-24 relative border-t border-white/5">
-                <div className="max-w-7xl mx-auto px-6">
-                    <h2 className="text-3xl lg:text-5xl font-bold text-center mb-16 tracking-tight">Loved by Support & Sales VPs</h2>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            { name: "Sarah Jenkins", role: "VP of Sales, TechFlow", text: "We replaced our entire tier-1 SDR team with ConvergsAI. Connection rates up 40%." },
-                            { name: "David Chen", role: "Head of Support, CloudScale", text: "It resolved 60% of tickets without human intervention. Our CSAT score actually went UP." },
-                            { name: "Jessica Lee", role: "Director of Ops, ScaleUp", text: "Finally, an AI that handles both sales booking and support triage in one phone number." }
-                        ].map((t, i) => (
-                            <div key={i} className="glass-premium p-8 rounded-3xl relative hover:bg-white/5 transition-colors">
-                                <div className="absolute -top-4 -left-4 text-6xl font-serif text-white/10">"</div>
-                                <div className="flex gap-1 text-yellow-500 mb-6 relative z-10">
-                                    {[...Array(5)].map((_, j) => <Star key={j} size={16} fill="currentColor" />)}
+                {/* FAQ */}
+                <section className="py-24">
+                    <div className="max-w-3xl mx-auto px-6">
+                        <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">Frequently asked questions</h2>
+                        <div className="space-y-4">
+                            {faqs.map((faq, i) => (
+                                <div key={i} className="glass-premium rounded-2xl overflow-hidden hover:bg-white/5 transition-colors border border-white/5">
+                                    <button
+                                        onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                                        className="w-full flex items-center justify-between p-6 text-left"
+                                    >
+                                        <span className="font-medium text-lg">{faq.q}</span>
+                                        {activeFaq === i ? <ChevronUp size={20} className="text-blue-400" /> : <ChevronDown size={20} className="text-slate-500" />}
+                                    </button>
+                                    <AnimatePresence>
+                                        {activeFaq === i && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="p-6 pt-0 text-slate-400 leading-relaxed border-t border-white/5 mt-2 font-medium">
+                                                    {faq.a}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
-                                <p className="text-lg text-slate-300 mb-6 leading-relaxed relative z-10 font-medium">{t.text}</p>
-                                <div className="flex items-center gap-3 border-t border-white/5 pt-4">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center font-bold text-white text-sm">
-                                        {t.name[0]}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-sm">{t.name}</div>
-                                        <div className="text-xs text-slate-500">{t.role}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Pricing */}
-            <section id="pricing" className="py-32 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent pointer-events-none" />
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <div className="text-center max-w-3xl mx-auto mb-20">
-                        <h2 className="text-4xl lg:text-5xl font-bold mb-6 tracking-tight">Transparent <span className="text-gradient-brand">pricing</span></h2>
-                        <p className="text-slate-400 text-lg">One subscription for both sales and support agents.</p>
+                {/* Big CTA */}
+                <section className="py-32 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-slate-950 pointer-events-none" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none" />
+
+                    <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
+                        <h2 className="text-5xl lg:text-7xl font-bold mb-8 tracking-tight">Scale Your <span className="text-gradient-brand">Sales Pipeline Today</span></h2>
+                        <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto font-medium">
+                            Join 200+ high-growth revenue teams using ConvergsAI to automate meetings and qualify leads 24/7.
+                        </p>
+                        <div className="flex flex-col sm:flex-row justify-center gap-4">
+                            <button className="bg-white text-black text-lg font-bold px-10 py-5 rounded-full hover:scale-105 transition-transform shadow-2xl">Start Your Risk-Free Trial</button>
+                            <button className="glass px-10 py-5 rounded-full text-lg font-medium hover:bg-white/10 transition-colors border border-white/10">Schedule an ROI Call</button>
+                        </div>
                     </div>
-
-                    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {pricingPlans.map((plan, i) => (
-                            <div key={i} className={`relative p-10 rounded-[2rem] border transition-all duration-300 hover:scale-[1.02] ${plan.highlight ? 'bg-slate-900/80 border-blue-500/50 shadow-2xl shadow-blue-900/20' : 'glass-premium border-white/5'}`}>
-                                {plan.highlight && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg shadow-blue-500/40">
-                                        Best Value
-                                    </div>
-                                )}
-                                <h3 className="text-xl font-bold mb-2 tracking-tight">{plan.name}</h3>
-                                <div className="flex items-baseline gap-1 mb-6">
-                                    <span className="text-4xl font-bold">{plan.price}</span>
-                                    <span className="text-slate-500">{plan.period}</span>
-                                </div>
-                                <p className="text-sm text-slate-400 mb-8 font-medium">{plan.desc}</p>
-                                <button className={`w-full py-4 rounded-xl font-bold mb-8 transition-all ${plan.highlight ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'}`}>
-                                    {plan.cta}
-                                </button>
-                                <ul className="space-y-4">
-                                    {plan.features.map((f, j) => (
-                                        <li key={j} className="flex items-center gap-3 text-sm text-slate-300 font-medium">
-                                            <CheckCircle2 size={16} className={plan.highlight ? 'text-blue-400' : 'text-slate-500'} />
-                                            {f}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* FAQ */}
-            <section className="py-24">
-                <div className="max-w-3xl mx-auto px-6">
-                    <h2 className="text-3xl font-bold text-center mb-12 tracking-tight">Frequently asked questions</h2>
-                    <div className="space-y-4">
-                        {faqs.map((faq, i) => (
-                            <div key={i} className="glass-premium rounded-2xl overflow-hidden hover:bg-white/5 transition-colors border border-white/5">
-                                <button
-                                    onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                                    className="w-full flex items-center justify-between p-6 text-left"
-                                >
-                                    <span className="font-medium text-lg">{faq.q}</span>
-                                    {activeFaq === i ? <ChevronUp size={20} className="text-blue-400" /> : <ChevronDown size={20} className="text-slate-500" />}
-                                </button>
-                                <AnimatePresence>
-                                    {activeFaq === i && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="p-6 pt-0 text-slate-400 leading-relaxed border-t border-white/5 mt-2 font-medium">
-                                                {faq.a}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Big CTA */}
-            <section className="py-32 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-slate-950 pointer-events-none" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none" />
-
-                <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
-                    <h2 className="text-5xl lg:text-7xl font-bold mb-8 tracking-tight">Scale Your <span className="text-gradient-brand">Sales Pipeline Today</span></h2>
-                    <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto font-medium">
-                        Join 200+ high-growth revenue teams using ConvergsAI to automate meetings and qualify leads 24/7.
-                    </p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button className="bg-white text-black text-lg font-bold px-10 py-5 rounded-full hover:scale-105 transition-transform shadow-2xl">Start Your Risk-Free Trial</button>
-                        <button className="glass px-10 py-5 rounded-full text-lg font-medium hover:bg-white/10 transition-colors border border-white/10">Schedule an ROI Call</button>
-                    </div>
-                </div>
-            </section>
+                </section>
+            </motion.div>
 
             {/* Footer */}
             <footer className="border-t border-white/5 bg-slate-950 py-16 relative z-10">
                 <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-sm text-slate-400">
                     <div>
                         <div className="flex items-center gap-2 mb-6">
-                            <img src="/logo.png" alt="ConvergsAI" className="w-5 h-5 object-contain" />
+                            <div className="w-5 h-5 relative">
+                                <Image src="/logo.png" alt="ConvergsAI" fill sizes="20px" className="object-contain" />
+                            </div>
                             <span className="text-lg font-bold text-white">ConvergsAI</span>
                         </div>
                         <p className="mb-6 leading-relaxed font-medium">Automating the future of sales conversations & support tickets with human-like AI.</p>

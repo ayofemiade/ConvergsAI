@@ -54,12 +54,19 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     const nebulaX = useTransform(springX, [-500, 500], [50, -50]);
     const nebulaY = useTransform(springY, [-500, 500], [50, -50]);
 
-    // Performance detection
+    // Performance detection & Reduced Motion
     useEffect(() => {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const lowHardware = 'hardwareConcurrency' in navigator && (navigator.hardwareConcurrency as number) < 8;
-        if (isMobile || lowHardware) {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (isMobile || lowHardware || prefersReducedMotion) {
             setPerformanceMode('low');
+        }
+
+        if (prefersReducedMotion) {
+            // Instantly skip to interface for accessibility
+            setPhase('interface');
         }
 
         document.body.style.overflow = 'hidden';
@@ -103,9 +110,9 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         };
     }, [mouseX, mouseY]);
 
-    // Particle system initialization
+    // Particle system initialization - Defer to after mount
     useEffect(() => {
-        const particleCount = performanceMode === 'low' ? 40 : 250; // Boosted high-end intensity
+        const particleCount = performanceMode === 'low' ? 20 : 250; // Drilled down even further for mobile
         particlesRef.current = Array.from({ length: particleCount }, (_, i) => ({
             id: i,
             x: Math.random() * window.innerWidth,
@@ -179,7 +186,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 ctx.fillStyle = `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`;
                 ctx.fill();
 
-                // Draw connections (neural network effect) - DISABLED ON LOW PERFORMANCE
+                // Draw connections (neural network effect) - DISABLED ON LOW PERFORMANCE / MOBILE
                 if (performanceMode === 'high' && (phase === 'signal' || phase === 'interface')) {
                     particles.slice(i + 1).forEach(otherParticle => {
                         const dx = particle.x - otherParticle.x;
