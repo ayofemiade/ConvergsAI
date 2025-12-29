@@ -267,7 +267,7 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 60, rotateX: 20 }}
                         animate={{ opacity: 1, y: 0, rotateX: 0 }}
                         transition={{ duration: 1, delay: 0.2, type: "spring" }}
-                        className="relative z-10 w-full mt-24 perspective-1000"
+                        className="relative z-10 w-full mt-12 md:mt-24 perspective-1000"
                     >
                         {/* 3D Floating Elements - Notifications */}
                         <motion.div
@@ -308,7 +308,7 @@ export default function LandingPage() {
 
                             {/* Dashboard Container with depth */}
                             <div className="glass-premium rounded-[2.5rem] p-2 ring-1 ring-white/10 shadow-2xl relative bg-[#0B1120]/80 backdrop-blur-2xl translate-z-10">
-                                <div className="rounded-[2rem] overflow-hidden border border-white/5 bg-[#020617] relative h-[450px] md:h-auto">
+                                <div className="rounded-[2rem] overflow-hidden border border-white/5 bg-[#020617] relative h-[700px] md:h-auto">
                                     {/* Reflection overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-20 pointer-events-none z-20" />
                                     <PhoneCallUI />
@@ -351,7 +351,7 @@ export default function LandingPage() {
                 {/* Product Tour Section - NEW */}
                 <section className="py-24 relative overflow-hidden">
                     <div className="max-w-7xl mx-auto px-6">
-                        <div className="glass-premium rounded-[3rem] aspect-video w-full relative overflow-hidden group shadow-2xl shadow-blue-500/10 border border-white/10">
+                        <div className="glass-premium rounded-[3rem] aspect-[4/5] sm:aspect-video w-full relative overflow-hidden group shadow-2xl shadow-blue-500/10 border border-white/10">
                             {/* Fake UI/Video Background */}
                             <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
                                 <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2070')] bg-cover bg-center" />
@@ -366,12 +366,12 @@ export default function LandingPage() {
                                     <Zap size={32} fill="currentColor" />
                                 </motion.button>
 
-                                <div className="absolute bottom-12 left-12 right-12 flex items-end justify-between z-10">
+                                <div className="absolute bottom-6 left-6 right-6 md:bottom-12 md:left-12 md:right-12 flex flex-col md:flex-row items-start md:items-end justify-between z-10 gap-4">
                                     <div className="space-y-2">
                                         <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 inline-block">
                                             Product Deep Dive
                                         </div>
-                                        <h2 className="text-2xl font-bold">Watch ConvergsAI in action (90s)</h2>
+                                        <h2 className="text-xl md:text-2xl font-bold">Watch ConvergsAI in action (90s)</h2>
                                     </div>
                                     <div className="hidden md:flex gap-4">
                                         <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Autopilot Mode: ON</div>
@@ -503,7 +503,7 @@ export default function LandingPage() {
                                     <p className="text-slate-300 max-w-sm">Discover exactly how much revenue you're leaving on the table by missing speed-to-lead.</p>
                                 </div>
                                 <div className="flex flex-col gap-3 w-full md:w-auto">
-                                    <button className="whitespace-nowrap px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-xl">
+                                    <button className="md:whitespace-nowrap px-6 md:px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-xl text-sm md:text-base" aria-label="Get started with ConvergsAI">
                                         Download ROI Framework (PDF)
                                     </button>
                                     <div className="text-center text-xs text-slate-500 font-medium italic">Join 1,200+ Sales Ops leaders</div>

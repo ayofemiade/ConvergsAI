@@ -134,7 +134,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
     };
 
     return (
-        <div className="w-full h-[600px] flex flex-col md:flex-row gap-6 p-1">
+        <div className="w-full h-full flex flex-col md:flex-row gap-6 p-1">
 
             {/* PHONE INTERFACE */}
             <div className="flex-1 relative group">
