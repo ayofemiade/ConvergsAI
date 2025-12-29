@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import PhoneCallUI from '@/components/PhoneCallUI';
-import { ArrowLeft, Wand2, RefreshCw, Zap, Play } from 'lucide-react';
+import { ArrowLeft, Wand2, RefreshCw, Zap, Play, User } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthContext';
 
 const PRESETS = [
     {
@@ -32,6 +33,7 @@ export default function PlaygroundPage() {
     const [systemPrompt, setSystemPrompt] = useState(PRESETS[0].prompt);
     const [activePreset, setActivePreset] = useState(0);
     const [phoneKey, setPhoneKey] = useState(0); // Used to reset the phone component
+    const { user, loading } = useAuth();
 
     const handlePresetSelect = (index: number) => {
         setActivePreset(index);
@@ -60,6 +62,18 @@ export default function PlaygroundPage() {
                             <p className="text-slate-400">Test the AI with custom personalities</p>
                         </div>
                     </div>
+
+                    {user && (
+                        <div className="flex items-center gap-3 bg-white/5 border border-white/10 py-2 px-4 rounded-2xl">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold">
+                                {user.name?.[0] || <User size={16} />}
+                            </div>
+                            <div className="hidden sm:block">
+                                <div className="text-xs text-slate-400">Authenticated as</div>
+                                <div className="text-sm font-bold text-white">{user.name}</div>
+                            </div>
+                        </div>
+                    )}
                 </header>
 
                 <div className="grid lg:grid-cols-12 gap-8">
@@ -76,8 +90,8 @@ export default function PlaygroundPage() {
                                         key={i}
                                         onClick={() => handlePresetSelect(i)}
                                         className={`p-4 rounded-xl text-left border transition-all duration-200 flex items-center gap-3 ${activePreset === i
-                                                ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20'
-                                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                            ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20'
+                                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
                                             }`}
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center">

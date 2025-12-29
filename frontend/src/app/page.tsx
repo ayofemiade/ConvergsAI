@@ -6,9 +6,10 @@ import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionV
 import {
     CheckCircle2, Zap, Globe, Shield, BarChart3, Clock, ArrowRight, Menu, X,
     Phone, Settings, Link as LinkIcon, Mic, ChevronDown, ChevronUp, Star,
-    Headphones, MessageCircle, Heart, Users, Sparkles
+    Headphones, MessageCircle, Heart, Users, Sparkles, User, LogOut
 } from 'lucide-react';
 import { useIntro } from '@/components/IntroContext';
+import { useAuth } from '@/components/AuthContext';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
@@ -74,6 +75,7 @@ export default function LandingPage() {
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const { replayIntro } = useIntro();
+    const { user, loginWithGoogle, logout } = useAuth();
 
     // 3D Tilt Logic
     const heroRef = useRef<HTMLDivElement>(null);
@@ -133,8 +135,40 @@ export default function LandingPage() {
                         <a href="#features" className="hover:text-white transition-colors">Features</a>
                         <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
                         <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-                        <button className="text-white hover:text-blue-400 transition-colors">Log In</button>
-                        <button className="bg-white text-black hover:bg-slate-200 py-2 px-4 rounded-full font-bold transition-all transform hover:scale-105" aria-label="Get started with ConvergsAI">Get Started</button>
+
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 bg-white/5 border border-white/10 py-1.5 px-3 rounded-full">
+                                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold">
+                                        {user.name?.[0] || <User size={12} />}
+                                    </div>
+                                    <span className="text-xs font-bold text-white max-w-[100px] truncate">{user.name}</span>
+                                </div>
+                                <button
+                                    onClick={() => logout()}
+                                    className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                                    aria-label="Log Out"
+                                >
+                                    <LogOut size={18} />
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => loginWithGoogle()}
+                                    className="text-white hover:text-blue-400 transition-colors"
+                                >
+                                    Log In
+                                </button>
+                                <button
+                                    onClick={() => loginWithGoogle()}
+                                    className="bg-white text-black hover:bg-slate-200 py-2 px-4 rounded-full font-bold transition-all transform hover:scale-105"
+                                    aria-label="Get started with ConvergsAI"
+                                >
+                                    Get Started
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     <div className="md:hidden">
@@ -167,8 +201,27 @@ export default function LandingPage() {
                                 <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bold hover:text-blue-400 transition-colors">How it Works</a>
                                 <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bold hover:text-blue-400 transition-colors">Pricing</a>
                                 <div className="h-px bg-white/10 my-2" />
-                                <button className="text-xl font-bold">Log In</button>
-                                <button className="bg-white text-black py-4 rounded-full text-xl font-bold shadow-xl">Get Started</button>
+                                {user ? (
+                                    <div className="flex flex-col gap-4 items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold">
+                                                {user.name?.[0]}
+                                            </div>
+                                            <span className="text-xl font-bold">{user.name}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => { logout(); setMobileMenuOpen(false); }}
+                                            className="text-red-400 font-bold flex items-center gap-2"
+                                        >
+                                            <LogOut size={20} /> Log Out
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <button onClick={() => { loginWithGoogle(); setMobileMenuOpen(false); }} className="text-xl font-bold">Log In</button>
+                                        <button onClick={() => { loginWithGoogle(); setMobileMenuOpen(false); }} className="bg-white text-black py-4 rounded-full text-xl font-bold shadow-xl">Get Started</button>
+                                    </>
+                                )}
                             </div>
                         </motion.div>
                     )}

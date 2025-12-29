@@ -9,6 +9,7 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "appwrite": "^21.5.0",
         "axios": "^1.6.5",
         "framer-motion": "^10.16.16",
         "lucide-react": "^0.303.0",

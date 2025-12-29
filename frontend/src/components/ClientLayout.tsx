@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { IntroProvider, useIntro } from './IntroContext';
+import { AuthProvider } from './AuthContext';
 import dynamic from 'next/dynamic';
 import { AnimatePresence } from 'framer-motion';
 
@@ -46,11 +47,13 @@ function MainContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     return (
-        <IntroProvider>
-            <IntroContainer />
-            <MainContent>
-                {children}
-            </MainContent>
-        </IntroProvider>
+        <AuthProvider>
+            <IntroProvider>
+                <IntroContainer />
+                <MainContent>
+                    {children}
+                </MainContent>
+            </IntroProvider>
+        </AuthProvider>
     );
 }
