@@ -77,6 +77,24 @@ export default function LandingPage() {
     const { replayIntro } = useIntro();
     const { user, openAuthModal, logout, isLoggingOut } = useAuth();
 
+    // Lock scrolling when mobile menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+        } else {
+            document.documentElement.style.overflow = 'unset';
+            document.body.style.overflow = 'unset';
+            document.body.style.touchAction = 'unset';
+        }
+        return () => {
+            document.documentElement.style.overflow = 'unset';
+            document.body.style.overflow = 'unset';
+            document.body.style.touchAction = 'unset';
+        };
+    }, [mobileMenuOpen]);
+
     // 3D Tilt Logic
     const heroRef = useRef<HTMLDivElement>(null);
     const mouseX = useMotionValue(0.5);
