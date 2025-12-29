@@ -12,9 +12,15 @@ export default function AuthModal() {
     // Disable scroll when modal is open
     useEffect(() => {
         if (isAuthModalOpen) {
+            // Lock scrolling on both body and html for total mobile compatibility
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
+            // Prevent touch scrolling on mobile
+            document.body.style.touchAction = 'none';
         } else {
+            document.documentElement.style.overflow = 'unset';
             document.body.style.overflow = 'unset';
+            document.body.style.touchAction = 'unset';
         }
 
         const handleEsc = (e: KeyboardEvent) => {
@@ -23,7 +29,9 @@ export default function AuthModal() {
         window.addEventListener('keydown', handleEsc);
 
         return () => {
+            document.documentElement.style.overflow = 'unset';
             document.body.style.overflow = 'unset';
+            document.body.style.touchAction = 'unset';
             window.removeEventListener('keydown', handleEsc);
         };
     }, [isAuthModalOpen, closeAuthModal]);
