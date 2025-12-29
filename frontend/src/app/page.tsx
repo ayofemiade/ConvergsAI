@@ -80,6 +80,7 @@ export default function LandingPage() {
     const handleIntroComplete = () => {
         setShowIntro(false);
         sessionStorage.setItem('hasSeenIntro', 'true');
+        window.scrollTo(0, 0); // Reset scroll position after intro
     };
 
     // 3D Tilt Logic
@@ -195,31 +196,46 @@ export default function LandingPage() {
                         transition={{ duration: 0.8 }}
                         className="space-y-8 flex flex-col items-center"
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs font-bold tracking-wide backdrop-blur-md hover:bg-blue-500/20 transition-colors cursor-default uppercase">
-                            <span className="relative flex h-2 w-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5 text-blue-300 text-[10px] font-bold tracking-widest backdrop-blur-md hover:bg-white/10 transition-colors cursor-default uppercase">
+                            <span className="relative flex h-1.5 w-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
                             </span>
                             New: Multi-Mode Voice Engine
                         </div>
 
-                        <h1 className="text-5xl sm:text-6xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight max-w-5xl">
-                            The AI Voice Agent for <br className="hidden md:block" />
-                            <span className="text-gradient-brand">Sales & Support</span>
+                        <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold leading-[1.0] tracking-[-0.03em] max-w-4xl mx-auto">
+                            Cut SDR Costs by 50% <br className="hidden md:block" />
+                            <span className="text-gradient-brand">— Scale Your Pipeline</span>
                         </h1>
 
-                        <p className="text-lg sm:text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto font-medium">
-                            Qualify inbound leads, resolve support tickets, and book meetings over realistic voice calls. One agent, dual capability.
+                        <p className="text-base sm:text-lg lg:text-xl text-slate-400 leading-relaxed max-w-xl mx-auto font-medium">
+                            ConvergsAI qualifies inbound leads and books real meetings with human-like voice intelligence. Built for mid-sized sales teams to scale without hiring.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full pt-4">
                             <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold py-4 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_-10px_rgba(79,70,229,0.6)] hover:scale-105 transition-all duration-300 group flex items-center gap-2">
-                                Start Free Trial
+                                Book a Demo
                                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                             </button>
-                            <button className="glass px-8 py-4 rounded-full text-lg font-medium hover:bg-white/10 transition-all border border-white/10">
-                                View Demo
+                            <button className="glass px-8 py-4 rounded-full text-lg font-medium hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2">
+                                <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                </span>
+                                Watch Product Tour
                             </button>
+                        </div>
+
+                        <div className="pt-8 flex items-center gap-4 text-slate-500 text-sm">
+                            <div className="flex -space-x-2">
+                                {[1, 2, 3, 4].map(i => (
+                                    <div key={i} className="w-8 h-8 rounded-full border-2 border-[#020617] bg-slate-800 flex items-center justify-center overflow-hidden">
+                                        <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-800" />
+                                    </div>
+                                ))}
+                            </div>
+                            <span className="font-medium">Trusted by 200+ Revenue Teams</span>
                         </div>
                     </motion.div>
 
@@ -284,7 +300,7 @@ export default function LandingPage() {
             {/* Social Proof - Infinite Scroll */}
             <section className="py-12 border-y border-white/5 bg-slate-950/50 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-[0.2em]">Trusted by support & sales teams</p>
+                    <p className="text-xs font-bold text-slate-500 mb-8 uppercase tracking-[0.2em]">Trusted by revenue teams at</p>
                     <div className="relative w-full overflow-hidden mask-gradient">
                         <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-[#020617] to-transparent z-10" />
                         <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-[#020617] to-transparent z-10" />
@@ -299,6 +315,40 @@ export default function LandingPage() {
                                     ))}
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Product Tour Section - NEW */}
+            <section className="py-24 relative overflow-hidden">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="glass-premium rounded-[3rem] aspect-video w-full relative overflow-hidden group shadow-2xl shadow-blue-500/10 border border-white/10">
+                        {/* Fake UI/Video Background */}
+                        <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                            <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2070')] bg-cover bg-center" />
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="z-10 w-24 h-24 rounded-full bg-white text-black flex items-center justify-center shadow-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-500"
+                            >
+                                <Zap size={32} fill="currentColor" />
+                            </motion.button>
+
+                            <div className="absolute bottom-12 left-12 right-12 flex items-end justify-between z-10">
+                                <div className="space-y-2">
+                                    <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 inline-block">
+                                        Product Deep Dive
+                                    </div>
+                                    <h3 className="text-2xl font-bold">Watch ConvergsAI in action (90s)</h3>
+                                </div>
+                                <div className="hidden md:flex gap-4">
+                                    <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Autopilot Mode: ON</div>
+                                    <div className="glass px-4 py-2 rounded-xl text-xs font-bold border border-white/10">Accuracy: 99.8%</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -319,20 +369,20 @@ export default function LandingPage() {
                         {[
                             {
                                 step: "01",
-                                title: "Connect",
-                                desc: "Sync your CRM (Sales) and Knowledge Base (Support).",
+                                title: "Sync Your Pipeline",
+                                desc: "Connect ConvergsAI to your CRM and training docs in under 5 minutes.",
                                 icon: <LinkIcon className="text-blue-400" size={24} />
                             },
                             {
                                 step: "02",
-                                title: "Train",
-                                desc: "Define two personas: 'Hunter' for sales, 'Helper' for support.",
+                                title: "Define Your Hunter",
+                                desc: "Tell the AI exactly what 'Qualified' looks like for your business.",
                                 icon: <Settings className="text-indigo-400" size={24} />
                             },
                             {
                                 step: "03",
-                                title: "Deploy",
-                                desc: "Route inbound calls based on intent detection.",
+                                title: "Scale Real Meetings",
+                                desc: "Deploy your agent to handle inbound speed-to-lead and outbound booking.",
                                 icon: <Zap className="text-purple-400" size={24} />
                             }
                         ].map((step, i) => (
@@ -401,18 +451,34 @@ export default function LandingPage() {
                         <motion.div whileHover={{ y: -5 }} className="glass-premium rounded-[2.5rem] p-8 relative overflow-hidden group">
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <BarChart3 className="w-10 h-10 text-purple-400 mb-4" />
-                            <h3 className="text-xl font-bold mb-2 tracking-tight">Unified Data</h3>
-                            <p className="text-slate-400 text-sm font-medium">Sales go to HubSpot. Tickets go to Zendesk. All automatically routed by intent.</p>
+                            <h3 className="text-xl font-bold mb-2 tracking-tight">Never Lose a Lead</h3>
+                            <p className="text-slate-400 text-sm font-medium">Automatically push qualified leads and call transcripts directly to Salesforce, HubSpot, or Pipedrive.</p>
                         </motion.div>
 
                         {/* Languages */}
                         <motion.div whileHover={{ y: -5 }} className="glass-premium rounded-[2.5rem] p-8 relative overflow-hidden group">
                             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             <Globe className="w-10 h-10 text-green-400 mb-4" />
-                            <h3 className="text-xl font-bold mb-2 tracking-tight">Local Presence</h3>
-                            <p className="text-slate-400 text-sm font-medium">Support customers in their native language with 30+ dialects and local accents.</p>
+                            <h3 className="text-xl font-bold mb-2 tracking-tight">Global Zero-Rep Scale</h3>
+                            <p className="text-slate-400 text-sm font-medium">Expand your outbound reach globally without hiring locally. 30+ native accents available instantly.</p>
                         </motion.div>
 
+                    </div>
+
+                    {/* ROI Lead Magnet */}
+                    <div className="mt-24 max-w-5xl mx-auto glass-premium p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-[2.5rem]">
+                        <div className="bg-slate-950 rounded-[2.4rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 h-full">
+                            <div className="space-y-4 text-center md:text-left">
+                                <h3 className="text-3xl font-bold tracking-tight">Calculate Your Sales ROI</h3>
+                                <p className="text-slate-400 max-w-sm">Discover exactly how much revenue you're leaving on the table by missing speed-to-lead.</p>
+                            </div>
+                            <div className="flex flex-col gap-3 w-full md:w-auto">
+                                <button className="whitespace-nowrap px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-xl">
+                                    Download ROI Framework (PDF)
+                                </button>
+                                <div className="text-center text-xs text-slate-500 font-medium italic">Join 1,200+ Sales Ops leaders</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -528,13 +594,13 @@ export default function LandingPage() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none" />
 
                 <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
-                    <h2 className="text-5xl lg:text-7xl font-bold mb-8 tracking-tight">Ready to <span className="text-gradient-brand">transform support?</span></h2>
+                    <h2 className="text-5xl lg:text-7xl font-bold mb-8 tracking-tight">Scale Your <span className="text-gradient-brand">Sales Pipeline Today</span></h2>
                     <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto font-medium">
-                        Join 2,000+ companies using ConvergsAI for Sales & Customer Success.
+                        Join 200+ high-growth revenue teams using ConvergsAI to automate meetings and qualify leads 24/7.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button className="bg-white text-black text-lg font-bold px-10 py-5 rounded-full hover:scale-105 transition-transform shadow-2xl">Start Free Trial</button>
-                        <button className="glass px-10 py-5 rounded-full text-lg font-medium hover:bg-white/10 transition-colors border border-white/10">Talk to Sales</button>
+                        <button className="bg-white text-black text-lg font-bold px-10 py-5 rounded-full hover:scale-105 transition-transform shadow-2xl">Start Your Risk-Free Trial</button>
+                        <button className="glass px-10 py-5 rounded-full text-lg font-medium hover:bg-white/10 transition-colors border border-white/10">Schedule an ROI Call</button>
                     </div>
                 </div>
             </section>

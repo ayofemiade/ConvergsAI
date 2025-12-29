@@ -364,7 +364,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                         {isDone ? (
                                             <span className="text-green-400 font-medium capitalize">{val}</span>
                                         ) : (
-                                            <span className="text-slate-600 italic">Pending...</span>
+                                            <span className="text-slate-600 italic">Analyzing intent...</span>
                                         )}
                                     </div>
                                 </motion.div>

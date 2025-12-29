@@ -26,6 +26,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     const [isHolding, setIsHolding] = useState(false);
     const [performanceMode, setPerformanceMode] = useState<'high' | 'low'>('high');
 
+    const mousePos = useRef({ x: 0, y: 0 });
     const holdInterval = useRef<NodeJS.Timeout | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const particlesRef = useRef<Particle[]>([]);
@@ -39,9 +40,19 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
 
-    // Parallax effects - reduced intensity for stability
-    const parallaxX = useTransform(mouseX, [-500, 500], [-5, 5]);
-    const parallaxY = useTransform(mouseY, [-500, 500], [-5, 5]);
+    // Smoother spring physics for parallax
+    const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
+    const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+
+    // Parallax effects - BOOSTED for high-end desktop
+    const parallaxX = useTransform(springX, [-500, 500], [-30, 30]);
+    const parallaxY = useTransform(springY, [-500, 500], [-30, 30]);
+    const rotateX = useTransform(springY, [-500, 500], [8, -8]);
+    const rotateY = useTransform(springX, [-500, 500], [-8, 8]);
+
+    // Background Nebula Parallax
+    const nebulaX = useTransform(springX, [-500, 500], [50, -50]);
+    const nebulaY = useTransform(springY, [-500, 500], [50, -50]);
 
     // Performance detection
     useEffect(() => {
@@ -68,6 +79,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         const handleMouseMove = (e: MouseEvent) => {
             targetX = e.clientX - window.innerWidth / 2;
             targetY = e.clientY - window.innerHeight / 2;
+            mousePos.current = { x: e.clientX, y: e.clientY };
             setCursorPos({ x: e.clientX, y: e.clientY });
         };
 
@@ -129,6 +141,18 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
             // Update and draw particles
             particles.forEach((particle, i) => {
                 // Update position
+                // Interactive forces - desktop high-end only
+                if (performanceMode === 'high') {
+                    const dx = mousePos.current.x - particle.x;
+                    const dy = mousePos.current.y - particle.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 250) {
+                        const force = (250 - dist) / 2500;
+                        particle.vx -= dx * force;
+                        particle.vy -= dy * force;
+                    }
+                }
+
                 particle.x += particle.vx;
                 particle.y += particle.vy;
 
@@ -270,16 +294,22 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
             {performanceMode === 'high' && (
                 <div className="fixed inset-0 pointer-events-none transition-opacity duration-1000">
                     <motion.div
-                        className="absolute inset-0 opacity-20"
+                        className="absolute inset-x-[-10%] inset-y-[-10%] opacity-30"
+                        style={{
+                            x: nebulaX,
+                            y: nebulaY,
+                        }}
                         animate={{
                             background: [
-                                'radial-gradient(circle at 20% 30%, rgba(59,130,246,0.15) 0%, transparent 50%)',
-                                'radial-gradient(circle at 80% 70%, rgba(139,92,246,0.15) 0%, transparent 50%)',
-                                'radial-gradient(circle at 20% 30%, rgba(59,130,246,0.15) 0%, transparent 50%)',
+                                'radial-gradient(circle at 20% 30%, rgba(59,130,246,0.3) 0%, transparent 60%)',
+                                'radial-gradient(circle at 80% 70%, rgba(139,92,246,0.3) 0%, transparent 60%)',
+                                'radial-gradient(circle at 20% 30%, rgba(59,130,246,0.3) 0%, transparent 60%)',
                             ]
                         }}
-                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                     />
+                    {/* Energy Beams */}
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
                 </div>
             )}
 
@@ -444,6 +474,13 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                     <motion.div
                         key="interface"
                         className="fixed inset-0 z-10 flex flex-col items-center justify-between pt-16 pb-12 md:pt-8 md:pb-16 px-6"
+                        style={{
+                            x: performanceMode === 'high' ? parallaxX : 0,
+                            y: performanceMode === 'high' ? parallaxY : 0,
+                            rotateX: performanceMode === 'high' ? rotateX : 0,
+                            rotateY: performanceMode === 'high' ? rotateY : 0,
+                            transformStyle: "preserve-3d"
+                        }}
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ type: "spring", damping: 30, stiffness: 200 }}
@@ -474,8 +511,21 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                             <motion.h1
                                 className="text-6xl md:text-7xl font-bold tracking-tighter"
                                 initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    textShadow: isHolding ? [
+                                        "0 0 0px rgba(59,130,246,0)",
+                                        "2px 0 10px rgba(59,130,246,0.5)",
+                                        "-2px 0 10px rgba(139,92,246,0.5)",
+                                        "0 0 0px rgba(59,130,246,0)"
+                                    ] : "0 0 20px rgba(59,130,246,0.1)"
+                                }}
+                                transition={{
+                                    opacity: { delay: 0.5 },
+                                    y: { delay: 0.5 },
+                                    textShadow: { duration: 0.2, repeat: isHolding ? Infinity : 0 }
+                                }}
                             >
                                 <span className="text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400">
                                     Convergs
