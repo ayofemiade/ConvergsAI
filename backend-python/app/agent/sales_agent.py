@@ -13,6 +13,7 @@ from app.agent.prompts import (
     SEMANTIC_LOCK_MODIFIER,
     NUDGE_MODIFIER,
     CLOSING_STEP_MODIFIER,
+    BEHAVIORAL_REFINEMENT_PROMPT,
 )
 from app.agent.analyzer import analyzer
 from app.agent.intelligence import (
@@ -88,7 +89,11 @@ class SalesAgent(BaseAgent):
         if is_locked:
             system_prompt += CLOSING_STEP_MODIFIER
 
+        # Add Behavioral Refinement
+        system_prompt += f"\n\n{BEHAVIORAL_REFINEMENT_PROMPT}"
+
         system_prompt += f"\n\n{VOICE_CONVERSATION_WRAPPER}"
+
         
         return system_prompt, current_stage
 
