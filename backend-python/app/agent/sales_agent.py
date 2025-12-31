@@ -6,8 +6,7 @@ import app.agent.memory as memory
 from app.agent.stages import SalesStage
 from app.agent.transitions import ALLOWED_TRANSITIONS
 from app.agent.prompts import (
-    SDR_SYSTEM_PROMPT,
-    SALES_SYSTEM_PROMPT,
+    BASE_AGENT_PROMPT,
     VOICE_CONVERSATION_WRAPPER,
     STAGE_PROMPTS,
     PRICING_GATE_MODIFIER,
@@ -47,17 +46,26 @@ class SalesAgent(BaseAgent):
         if isinstance(current_stage, str):
             current_stage = SalesStage(current_stage)
 
-        # ---------- Guardrail: Stalling Nudge ----------
+        # ---------- Guardrail: Stalling Nudge (Max 2) ----------
         turns = memory.session_memory.turns_in_stage(session_id)
         nudge_text = ""
-        if turns > 2 and current_stage != SalesStage.CLOSING:
-            logger.info(f"[Guardrail] Stalling detected in {current_stage.value}. Preparing nudge.")
+        # Only nudge on the first 2 "stalled" turns (e.g. Turn 3 and 4)
+        if 2 < turns <= 4 and current_stage != SalesStage.CLOSING:
+            logger.info(f"[Guardrail] Stalling detected (Turn {turns}) in {current_stage.value}. Nudging.")
             nudge_text = NUDGE_MODIFIER.format(goal=STAGE_PROMPTS.get(current_stage, ""))
+        elif turns > 4 and current_stage != SalesStage.CLOSING:
+            logger.info(f"[Guardrail] Max nudges reached for {current_stage.value}. Silence on nudge.")
 
+        # ---------- Context Injection ----------
+        # Fetch all relevant metadata to keep the prompt context-aware
+        role = memory.session_memory.get_metadata(session_id, "role")
+        company = memory.session_memory.get_metadata(session_id, "company")
+        pain_points = memory.session_memory.get_metadata(session_id, "pain_points")
+        
+        context_summary = f"\n[USER CONTEXT]\n- Role: {role or 'Unknown'}\n- Company: {company or 'Unknown'}\n- Identified Pain Points: {pain_points or 'None yet'}"
+        
         # ---------- Prompt Generation ----------
-        system_prompt = (
-            SDR_SYSTEM_PROMPT if mode == "SDR" else SALES_SYSTEM_PROMPT
-        )
+        system_prompt = BASE_AGENT_PROMPT + context_summary
         
         # Add stage-specific precision
         stage_instruction = STAGE_PROMPTS.get(current_stage, "")
@@ -91,6 +99,7 @@ class SalesAgent(BaseAgent):
     def advance_logic(self, session_id: str, current_stage: SalesStage, analysis: Dict[str, Any]):
         """
         Determines if we should advance based on analyzer recommendation, intents, and exit conditions.
+        Implements smart jumping for high-priority intents.
         """
         if current_stage == SalesStage.CLOSING:
             # If meeting is locked, lock the session
@@ -99,18 +108,16 @@ class SalesAgent(BaseAgent):
                 memory.session_memory.set_metadata(session_id, SESSION_END_KEY, True)
             return
 
-        # 1. Verification: Is the intent allowed for advancing?
         intent = analysis.get("intent")
-        allowed_intents = ALLOWED_ADVANCE_INTENTS.get(current_stage, set())
-        
-        # 2. Check if analyzer recommended advance
         should_advance = analysis.get("recommended_action") == "advance"
         
+        # 1. Verification: Is the intent allowed for advancing?
+        allowed_intents = ALLOWED_ADVANCE_INTENTS.get(current_stage, set())
         if should_advance and intent not in allowed_intents:
             logger.info(f"[Flow] Intent '{intent}' not in advance list for {current_stage.value}. Blocking advance.")
             should_advance = False
 
-        # 3. Verify all exit conditions for the current stage are met in metadata
+        # 2. Verify all exit conditions for the current stage are met in metadata
         required_info = EXIT_CONDITIONS.get(current_stage, [])
         for field in required_info:
             val = memory.session_memory.get_metadata(session_id, field)
@@ -119,8 +126,21 @@ class SalesAgent(BaseAgent):
                 should_advance = False
                 break
 
-        if should_advance:
-            self._advance_stage(session_id, current_stage)
+        # 3. Smart Jumping Logic (Override transition flow)
+        target_stage = None
+        if current_stage == SalesStage.GREETING:
+            if intent == "pricing_query":
+                logger.info("[Flow] Smart Jump: GREETING -> QUALIFICATION (via pricing query)")
+                target_stage = SalesStage.QUALIFICATION
+            elif intent == "sharing_pain":
+                logger.info("[Flow] Smart Jump: GREETING -> PROBLEM (via sharing pain)")
+                target_stage = SalesStage.PROBLEM
+            elif intent == "affirmation":
+                logger.info("[Flow] Smart Jump: GREETING -> QUALIFICATION (via affirmation)")
+                target_stage = SalesStage.QUALIFICATION
+
+        if should_advance or target_stage:
+            self._advance_stage(session_id, current_stage, target_stage=target_stage)
         else:
             logger.info(f"[Flow] Stage Lock: Staying in {current_stage.value}.")
 
@@ -162,6 +182,9 @@ class SalesAgent(BaseAgent):
         # Add extra instruction if intent was vague or evasive
         if analysis.get("is_vague"):
             messages.append({"role": "system", "content": "The user was vague or evasive. Gently but firmly ask for the missing information before proceeding."})
+            
+        if analysis.get("intent") == "product_curiosity":
+            messages.append({"role": "system", "content": "The user is curious about what you do. Briefly and humanly explain our value (AI that handles sales calls) before shifting back to your stage goal."})
 
         response = await cerebras_service.chat_completion(messages)
 
@@ -173,10 +196,14 @@ class SalesAgent(BaseAgent):
 
         return response
 
-    def _advance_stage(self, session_id: str, current_stage: SalesStage):
-        allowed = ALLOWED_TRANSITIONS.get(current_stage, [])
-        if allowed:
-            next_stage = allowed[0]
+    def _advance_stage(self, session_id: str, current_stage: SalesStage, target_stage: SalesStage = None):
+        if target_stage:
+            next_stage = target_stage
+        else:
+            allowed = ALLOWED_TRANSITIONS.get(current_stage, [])
+            next_stage = allowed[0] if allowed else None
+            
+        if next_stage:
             logger.info(f"[Transition] {current_stage.value} -> {next_stage.value}")
             memory.session_memory.advance_stage(session_id, next_stage)
         else:

@@ -13,7 +13,7 @@ EXIT_CONDITIONS: Dict[SalesStage, List[str]] = {
 
 # Intents allowed to trigger an advance PER stage
 ALLOWED_ADVANCE_INTENTS: Dict[SalesStage, Set[str]] = {
-    SalesStage.GREETING: {"greeting", "information_request", "other"},
+    SalesStage.GREETING: {"greeting", "information_request", "affirmation", "pricing_query", "sharing_pain", "other"},
     SalesStage.QUALIFICATION: {"providing_info", "affirmation"},
     SalesStage.PROBLEM: {"sharing_pain", "affirmation"},
     SalesStage.SOLUTION: {"interest", "affirmation"}, # "interest" here means they liked the value

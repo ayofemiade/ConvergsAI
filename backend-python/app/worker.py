@@ -5,7 +5,7 @@ from livekit.plugins import openai
 from app.services.cerebras_livekit import get_llm
 from app.voice.vad import get_vad
 from app.voice.tts import get_tts
-from app.agent.prompts import SDR_SYSTEM_PROMPT
+from app.agent.prompts import BASE_AGENT_PROMPT
 from app.logging import logger
 
 async def entrypoint(ctx: JobContext):
@@ -22,7 +22,7 @@ async def entrypoint(ctx: JobContext):
         tts=get_tts(),    # Cartesia for natural voice
         chat_ctx=openai.ChatContext().append(
             role="system", 
-            text=SDR_SYSTEM_PROMPT
+            text=BASE_AGENT_PROMPT
         )
     )
 
