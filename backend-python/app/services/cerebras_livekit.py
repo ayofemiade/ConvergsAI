@@ -27,6 +27,7 @@ class CerebrasLLM(llm.LLM):
         tool_choice: Any = None,
         **kwargs
     ) -> "CerebrasLLMStream":
+        # Note: LiveKit v1.x passes conn_options in kwargs
         return CerebrasLLMStream(
             llm=self,
             chat_ctx=chat_ctx,
@@ -48,8 +49,10 @@ class CerebrasLLMStream(llm.LLMStream):
     async def _run(self) -> None:
         """
         Implementation of the abstract method _run from llm.LLMStream.
+        This handles the generation task.
         """
         session_id = "livekit_voice"
+        logger.info(f"[CerebrasLLM] Stream _run started for session {session_id}")
         
         # 1. Sync latest user message to SalesAgent memory
         user_text = ""
@@ -57,6 +60,7 @@ class CerebrasLLMStream(llm.LLMStream):
             last_msg = self._chat_ctx.messages[-1]
             if last_msg.role == llm.ChatRole.USER:
                 user_text = last_msg.content
+                logger.debug(f"[CerebrasLLM] User message captured: {user_text}")
                 sales_agent.update_memory(session_id, "user", user_text)
 
         # 2. Get state & history
@@ -70,9 +74,9 @@ class CerebrasLLMStream(llm.LLMStream):
         if user_text:
             try:
                 from app.agent.analyzer import analyzer
-                logger.info(f"[CerebrasLLM] Analyzing input: '{user_text[:50]}...'")
+                logger.info(f"[CerebrasLLM] Analyzing user input...")
                 analysis = await analyzer.analyze(user_text, history, current_stage)
-                logger.info(f"[CerebrasLLM-Analyzer] intent={analysis.get('intent')}")
+                logger.info(f"[CerebrasLLM] Intent detected: {analysis.get('intent')}")
                 
                 from app.agent.intelligence import PRICING_GATE_METADATA_KEY
                 for key, val in analysis.get("extracted_info", {}).items():
@@ -93,9 +97,9 @@ class CerebrasLLMStream(llm.LLMStream):
 
         # 5. Generate
         try:
-            logger.info(f"[CerebrasLLM] Calling Cerebras API with {len(messages)} messages")
+            logger.info(f"[CerebrasLLM] Requesting completion from Cerebras (Model: {self.llm.model})...")
             response_text = await cerebras_service.chat_completion(messages)
-            logger.info(f"[CerebrasLLM] Received response: '{response_text[:50]}...'")
+            logger.info(f"[CerebrasLLM] Response received ({len(response_text)} chars)")
             
             # Sync assistant response back
             sales_agent.update_memory(session_id, "assistant", response_text)
@@ -103,9 +107,9 @@ class CerebrasLLMStream(llm.LLMStream):
             # Advance Stage Machine logic
             sales_agent.advance_logic(session_id, final_stage, analysis)
             
-            # Push results to the stream
-            # We use await send() to ensure it's delivered before closing
-            await self._event_ch.send(
+            # Push the result to the event channel
+            logger.debug("[CerebrasLLM] Sending response chunk to LiveKit")
+            self._event_ch.send_nowait(
                 llm.ChatChunk(
                     choices=[
                         llm.Choice(
@@ -118,6 +122,7 @@ class CerebrasLLMStream(llm.LLMStream):
         except Exception as e:
             logger.error(f"[CerebrasLLM] Chat failed: {e}")
         finally:
+            logger.info("[CerebrasLLM] Closing stream")
             self._event_ch.close()
 
 # Factory function
