@@ -1,6 +1,6 @@
 import time
 from functools import wraps
-from app.logging import logger
+from app.logger_config import logger
 
 def timeit(func):
     @wraps(func)

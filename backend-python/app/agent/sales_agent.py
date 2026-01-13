@@ -14,6 +14,7 @@ from app.agent.prompts import (
     NUDGE_MODIFIER,
     CLOSING_STEP_MODIFIER,
     BEHAVIORAL_REFINEMENT_PROMPT,
+    DETERMINISTIC_SYSTEM_PROMPT,
 )
 from app.agent.analyzer import analyzer
 from app.agent.intelligence import (
@@ -23,7 +24,7 @@ from app.agent.intelligence import (
     ALLOWED_ADVANCE_INTENTS
 )
 from app.services.cerebras import cerebras_service
-from app.logging import logger
+from app.logger_config import logger
 
 
 class SalesAgent(BaseAgent):
@@ -66,7 +67,7 @@ class SalesAgent(BaseAgent):
         context_summary = f"\n[USER CONTEXT]\n- Role: {role or 'Unknown'}\n- Company: {company or 'Unknown'}\n- Identified Pain Points: {pain_points or 'None yet'}"
         
         # ---------- Prompt Generation ----------
-        system_prompt = BASE_AGENT_PROMPT + context_summary
+        system_prompt = DETERMINISTIC_SYSTEM_PROMPT + "\n" + BASE_AGENT_PROMPT + context_summary
         
         # Add stage-specific precision
         stage_instruction = STAGE_PROMPTS.get(current_stage, "")

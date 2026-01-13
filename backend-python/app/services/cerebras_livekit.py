@@ -5,7 +5,7 @@ from app.services.cerebras import cerebras_service
 from app.agent.sales_agent import sales_agent
 import app.agent.memory as memory
 from app.agent.stages import SalesStage
-from app.logging import logger
+from app.logger_config import logger
 
 class CerebrasLLM(llm.LLM):
     def __init__(self):

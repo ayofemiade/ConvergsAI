@@ -2,7 +2,7 @@ import os
 from typing import List, Dict, Any, Optional
 from cerebras.cloud.sdk import AsyncCerebras
 from app.config import settings
-from app.logging import logger
+from app.logger_config import logger
 from app.utils.timing import timeit
 
 class CerebrasService:
