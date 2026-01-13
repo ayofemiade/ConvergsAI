@@ -29,4 +29,27 @@ class CerebrasService:
             logger.error(f"Cerebras API error: {e}")
             raise e
 
+    async def stream_completion(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None
+    ):
+        """Streams content from Cerebras."""
+        try:
+            stream = await self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True
+            )
+            async for chunk in stream:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+        except Exception as e:
+            logger.error(f"Cerebras Stream error: {e}")
+            raise e
+
 cerebras_service = CerebrasService()

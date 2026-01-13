@@ -70,24 +70,20 @@ class SalesLLMStream(llm.LLMStream):
         logger.info(f"[SalesLLM] Processing input for session {session_id}: {user_msg}")
         
         try:
-            # Call the brain
-            response_text = await sales_agent.generate_response(user_msg, session_id)
-            
-            # Stream the response back in chunks
-            tokens = response_text.split()
-            for i, token in enumerate(tokens):
-                content = token + (" " if i < len(tokens) - 1 else "")
+            # 2. Call the brain with TRUE STREAMING
+            # sales_agent.generate_stream yields tokens in real-time
+            async for token in sales_agent.generate_stream(user_msg, session_id):
                 # SDK 1.3.10 uses delta field, not choices list
                 self._event_ch.send_nowait(
                     llm.ChatChunk(
                         id="", # Optional ID
                         delta=llm.ChoiceDelta(
                             role="assistant",
-                            content=content
+                            content=token
                         )
                     )
                 )
         except Exception as e:
-            logger.error(f"[SalesLLM] Error generating response: {e}", exc_info=True)
+            logger.error(f"[SalesLLM] Error in streaming response: {e}", exc_info=True)
         finally:
             self._event_ch.close()

@@ -16,7 +16,7 @@ from app.agent.prompts import (
     BEHAVIORAL_REFINEMENT_PROMPT,
     DETERMINISTIC_SYSTEM_PROMPT,
 )
-from app.agent.analyzer import analyzer
+from app.services.cerebras import cerebras_service
 from app.agent.intelligence import (
     EXIT_CONDITIONS, 
     PRICING_GATE_METADATA_KEY, 
@@ -150,7 +150,11 @@ class SalesAgent(BaseAgent):
         else:
             logger.info(f"[Flow] Stage Lock: Staying in {current_stage.value}.")
 
-    async def generate_response(self, text: str, session_id: str) -> str:
+    async def generate_stream(self, text: str, session_id: str):
+        """
+        Async generator that yields tokens for the assistant's human response,
+        then parses the hidden <analysis> block at the end to update state.
+        """
         # 1. Update user memory
         self.update_memory(session_id, "user", text)
         
@@ -158,49 +162,84 @@ class SalesAgent(BaseAgent):
         current_stage = memory.session_memory.get_metadata(session_id, "stage")
         if isinstance(current_stage, str):
             current_stage = SalesStage(current_stage)
-            
         history = memory.session_memory.get_history(session_id)
 
-        # 3. Analyze Input (Intent + Info Extraction)
-        analysis = await analyzer.analyze(text, history, current_stage)
-        logger.info(f"[Analyzer] session={session_id} intent={analysis.get('intent')} action={analysis.get('recommended_action')}")
-
-        # 4. Update Metadata with extracted info
-        for key, val in analysis.get("extracted_info", {}).items():
-            if val is not None:
-                memory.session_memory.set_metadata(session_id, key, val)
-                # If we're providing value info, flip the pricing gate
-                if key == "value_accepted" and val is True:
-                     memory.session_memory.set_metadata(session_id, PRICING_GATE_METADATA_KEY, True)
-
-        # 5. Prepare Payload (Strict Prompting)
+        # 3. Prepare Unified Payload (Generator + Analyzer instructions)
+        from app.agent.prompts import COMBINED_ANALYSIS_INSTRUCTION
+        
         system_prompt, final_stage = self.prepare_payload(session_id)
+        
+        # Inject the combined analysis instruction
+        system_prompt += f"\n\n{COMBINED_ANALYSIS_INSTRUCTION.format(current_stage=final_stage.value)}"
         
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(history)
 
-        turns = memory.session_memory.turns_in_stage(session_id)
-        logger.info(
-            f"[SalesAgent] session={session_id} stage={final_stage.value} turns={turns}"
-        )
-
-        # 6. AI Generation
-        # Add extra instruction if intent was vague or evasive
-        if analysis.get("is_vague"):
-            messages.append({"role": "system", "content": "The user was vague or evasive. Gently but firmly ask for the missing information before proceeding."})
+        full_response_buffer = []
+        is_parsing_analysis = False
+        
+        logger.info(f"[SalesAgent] Combined Call Start - Session: {session_id}, Stage: {final_stage.value}")
+        
+        # 4. Stream from Cerebras
+        async for token in cerebras_service.stream_completion(messages):
+            full_response_buffer.append(token)
             
-        if analysis.get("intent") == "product_curiosity":
-            messages.append({"role": "system", "content": "The user is curious about what you do. Briefly and humanly explain our value (AI that handles sales calls) before shifting back to your stage goal."})
+            # Simple check to stop yielding once we hit the analysis block
+            # This prevents the raw JSON from being spoken by the TTS
+            if "<analysis>" in "".join(full_response_buffer[-10:]):
+                is_parsing_analysis = True
+                
+            if not is_parsing_analysis:
+                yield token
 
-        response = await cerebras_service.chat_completion(messages)
+        full_content = "".join(full_response_buffer)
+        
+        # 5. Post-Stream: Extract Analysis & Update State
+        try:
+            if "<analysis>" in full_content and "</analysis>" in full_content:
+                start = full_content.find("<analysis>") + len("<analysis>")
+                end = full_content.find("</analysis>")
+                analysis_json = full_content[start:end].strip()
+                import json
+                analysis = json.loads(analysis_json)
+                
+                # Human response is everything before <analysis>
+                human_response = full_content[:full_content.find("<analysis>")].strip()
+            else:
+                logger.warning("[SalesAgent] No <analysis> block found in response.")
+                human_response = full_content
+                analysis = {
+                    "intent": "other",
+                    "extracted_info": {},
+                    "is_vague": False,
+                    "recommended_action": "stay"
+                }
+        except Exception as e:
+            logger.error(f"[SalesAgent] Failed to parse combined analysis: {e}")
+            human_response = full_content # Fallback
+            analysis = {"intent": "other", "extracted_info": {}, "recommended_action": "stay"}
 
-        # 7. Update assistant memory
-        self.update_memory(session_id, "assistant", response)
+        # 6. Update Assistant Memory (Human part only)
+        self.update_memory(session_id, "assistant", human_response)
 
-        # 8. Advance Stage Machine logic
+        # 7. Update Metadata with extracted info
+        for key, val in analysis.get("extracted_info", {}).items():
+            if val is not None:
+                memory.session_memory.set_metadata(session_id, key, val)
+                if key == "value_accepted" and val is True:
+                     memory.session_memory.set_metadata(session_id, PRICING_GATE_METADATA_KEY, True)
+
+        # 8. Advance Stage logic
         self.advance_logic(session_id, final_stage, analysis)
+        
+        logger.info(f"[SalesAgent] Combined Call Complete - New Stage: {memory.session_memory.get_metadata(session_id, 'stage')}")
 
-        return response
+    async def generate_response(self, text: str, session_id: str) -> str:
+        """Backward compatibility wrapper. Collects the stream and returns full text."""
+        response_parts = []
+        async for token in self.generate_stream(text, session_id):
+            response_parts.append(token)
+        return "".join(response_parts)
 
     def _advance_stage(self, session_id: str, current_stage: SalesStage, target_stage: SalesStage = None):
         if target_stage:

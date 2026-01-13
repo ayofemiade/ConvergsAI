@@ -214,4 +214,36 @@ Your goal is to sound unmistakably human, confident, adaptive, and effective —
 --- END BEHAVIOR RULES ---
 """
 
+# ================================
+# REAL-TIME ANALYSIS (COMBINED CALL)
+# ================================
+
+COMBINED_ANALYSIS_INSTRUCTION = """
+--- IMPORTANT: REAL-TIME ANALYSIS ---
+After providing your human response, you MUST provide a structured analysis of the conversation inside <analysis> tags.
+Format:
+<analysis>
+{{
+  "intent": "string (one of: greeting, providing_info, sharing_pain, interest, affirmation, objection, clarification, pricing_query, curiosity, evasion, other)",
+  "extracted_info": {{
+    "role": "string or null",
+    "company": "string or null",
+    "pain_points": "string or null",
+    "value_accepted": "boolean (Set to True ONLY if user explicitly says yes/sounds good to the solution)",
+    "concerns_addressed": "boolean or null",
+    "meeting_intent": "boolean or null",
+    "meeting_locked": "boolean or null"
+  }},
+  "is_vague": boolean,
+  "recommended_action": "stay" or "advance"
+}}
+</analysis>
+
+Rules:
+1. Speak the human response FIRST.
+2. The <analysis> block must be the very LAST thing you output.
+3. The <analysis> block is for the system, not the user.
+4. Ensure the JSON inside <analysis> is valid and matches the current stage logic.
+"""
+
 
