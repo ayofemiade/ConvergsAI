@@ -17,6 +17,7 @@ const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
+const { AccessToken } = require('livekit-server-sdk');
 
 // Initialize Express app
 const app = express();
@@ -265,15 +266,61 @@ app.delete('/api/session/:sessionId', async (req, res) => {
   }
 });
 
-// Future: LiveKit Token Generation (for voice features)
-app.post('/api/livekit/token', (req, res) => {
-  // Placeholder for LiveKit token generation
-  // Will be implemented when adding voice features
-  res.status(501).json({
-    success: false,
-    message: 'Voice features coming soon',
-    feature: 'livekit_integration'
-  });
+// LiveKit Token Generation (for voice features)
+app.post('/api/livekit/token', async (req, res) => {
+  try {
+    const { roomName, identity } = req.body;
+    console.log(`DEBUG: Token request for room: ${roomName}, identity: ${identity}`);
+
+    if (!roomName) {
+      return res.status(400).json({
+        success: false,
+        error: 'roomName is required'
+      });
+    }
+
+    // Default identity if not provided
+    const participantIdentity = identity || `user_${uuidv4().slice(0, 8)}`;
+
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
+    const livekitUrl = process.env.LIVEKIT_URL;
+
+    console.log(`DEBUG: LiveKit Config - URL: ${livekitUrl}, API_KEY: ${apiKey ? 'SET' : 'MISSING'}`);
+
+    if (!apiKey || !apiSecret) {
+      throw new Error('LiveKit credentials not configured in .env');
+    }
+
+    const at = new AccessToken(apiKey, apiSecret, {
+      identity: participantIdentity,
+    });
+
+    at.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true
+    });
+
+    const token = await at.toJwt();
+    console.log(`DEBUG: Token generated successfully for ${participantIdentity}`);
+
+    res.json({
+      success: true,
+      token: token,
+      serverUrl: livekitUrl || 'ws://localhost:7800'
+    });
+
+  } catch (error) {
+    console.error('DEBUG ERROR: LiveKit token generation failed:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate token',
+      message: error.message
+    });
+  }
 });
 
 // 404 Handler

@@ -114,6 +114,25 @@ class APIClient {
     }
 
     /**
+     * Get LiveKit token
+     */
+    async getLiveKitToken(roomName: string, identity?: string): Promise<{ token: string; serverUrl: string }> {
+        const response = await fetch(`${this.baseURL}/api/livekit/token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ roomName, identity }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to get LiveKit token: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    /**
      * Health check
      */
     async healthCheck(): Promise<{ status: string; services: any }> {

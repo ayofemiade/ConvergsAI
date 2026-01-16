@@ -146,6 +146,30 @@ If required information is missing, politely ask for it.
 # NUDGE BEHAVIOR (ANTI-STALL)
 # ================================
 
+# ================================
+# PATTERN INTERRUPT (LOOP BREAKER)
+# ================================
+
+PATTERN_INTERRUPT_MODIFIER = """
+[PATTERN INTERRUPT]
+The conversation is stuck in a loop.
+STOP being polite. STOP being passive.
+Be blunt. Acknowledge the loop explicitly.
+"Look, we're swapping greetings but not getting anywhere. I help businesses automate sales calls. Is that something you actually need help with, or are we just testing the line?"
+Pivot immediately to the pitch.
+"""
+
+# ================================
+# PERCEPTUAL RECOVERY
+# ================================
+
+PERCEPTUAL_RECOVERY_MODIFIER = """
+[PERCEPTUAL RECOVERY]
+If the conversation history shows you replied "Hello" or something generic while the user was actually providing value (e.g. sharing pain), you likely misheard them due to technical lag.
+Immediately apologize: "Actually, I think I missed what you just said—you mentioned [topic]?"
+Then address their real point. Never ignore real data.
+"""
+
 NUDGE_MODIFIER = """
 If the conversation stalls:
 - Gently reframe the question

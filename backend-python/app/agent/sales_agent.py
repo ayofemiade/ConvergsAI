@@ -33,7 +33,7 @@ class SalesAgent(BaseAgent):
     Backend controls flow — LLM only generates language.
     """
 
-    def prepare_payload(self, session_id: str) -> Tuple[str, SalesStage]:
+    def prepare_payload(self, session_id: str, skip_nudge: bool = False) -> Tuple[str, SalesStage]:
         """
         Calculates the correct system prompt and current stage based on memory.
         Applies guardrails, semantic locks, pricing gates, and nudges.
@@ -83,7 +83,7 @@ class SalesAgent(BaseAgent):
         system_prompt += PRICING_GATE_MODIFIER
 
         # Add Nudge if stalling
-        if nudge_text:
+        if nudge_text and not skip_nudge:
             system_prompt += nudge_text
 
         # Handle Session Lock
@@ -125,12 +125,23 @@ class SalesAgent(BaseAgent):
 
         # 2. Verify all exit conditions for the current stage are met in metadata
         required_info = EXIT_CONDITIONS.get(current_stage, [])
+        missing_critical = False
         for field in required_info:
             val = memory.session_memory.get_metadata(session_id, field)
             if not val:
+                # [SOFT ADVANCEMENT]
+                # If we have clear Pain Points or Intent, we can often advance even if 
+                # we don't know their specific Role/Company yet.
+                if intent in ["sharing_pain", "interest"] and field in ["role", "company"]:
+                    logger.info(f"[Flow] Soft Advance: Missing '{field}' but intent is '{intent}'. Allowing.")
+                    continue
+                
                 logger.info(f"[Flow] Missing required info '{field}' for stage {current_stage.value}. Staying.")
-                should_advance = False
+                missing_critical = True
                 break
+        
+        if missing_critical:
+            should_advance = False
 
         # 3. Smart Jumping Logic (Override transition flow)
         target_stage = None
@@ -150,7 +161,7 @@ class SalesAgent(BaseAgent):
         else:
             logger.info(f"[Flow] Stage Lock: Staying in {current_stage.value}.")
 
-    async def generate_stream(self, text: str, session_id: str):
+    async def generate_stream(self, session_id: str, text: str):
         """
         Async generator that yields tokens for the assistant's human response,
         then parses the hidden <analysis> block at the end to update state.
@@ -167,8 +178,53 @@ class SalesAgent(BaseAgent):
         # 3. Prepare Unified Payload (Generator + Analyzer instructions)
         from app.agent.prompts import COMBINED_ANALYSIS_INSTRUCTION
         
-        system_prompt, final_stage = self.prepare_payload(session_id)
+        # --- LOOP BREAKER LOGIC (Intelligence: Reset on substantive content) ---
+        clean_text = text.strip().lower()
+        # If the user's text is long or doesn't look like a greeting, it's substantive
+        is_substantive = len(clean_text) > 15 or clean_text not in ["hello", "hi", "hey", "hello?", "hi there", "inquiry", "inquiry."]
+        is_generic_greeting = clean_text in ["hello", "hi", "hey", "hello?", "hi there"]
         
+        greeting_count = memory.session_memory.get_metadata(session_id, "greeting_loop_count") or 0
+        
+        if is_generic_greeting:
+            greeting_count += 1
+            memory.session_memory.set_metadata(session_id, "greeting_loop_count", greeting_count)
+            logger.info(f"[SalesAgent] Greeting Loop Count: {greeting_count}")
+        elif is_substantive:
+            # User actually said something else, reset the loop
+            memory.session_memory.set_metadata(session_id, "greeting_loop_count", 0)
+            logger.info(f"[SalesAgent] Loop Reset: Substantive input received ('{text[:20]}...')")
+
+        # 3. Prepare Unified Payload (Generator + Analyzer instructions)
+        # We skip nudges if the user is being substantive
+        system_prompt, final_stage = self.prepare_payload(session_id, skip_nudge=is_substantive)
+        
+        # [INTELLIGENCE: Pre-Transition Awareness]
+        # If the user just provided value, ensure the brain doesn't sound robotic
+        # by repeating greeting-stage "nudge" filler.
+        if is_substantive:
+            system_prompt += "\n\n[USER IS MAKING PROGRESS]\nIgnore any 'stalling' or 'greeting' instructions. The user just shared content. Respond to their content directly and move the conversation forward."
+            # If we are STILL in greeting, but they said a lot, force a mental pivot
+            if final_stage == SalesStage.GREETING:
+                system_prompt += "\nAct as if you are already in the QUALIFICATION or PROBLEM stage. Do not say 'How can I help you' again."
+
+        # If we are stuck in a loop, force the agent to lead
+        # ONLY if the user just sent another greeting turn
+        if greeting_count > 2 and is_generic_greeting:
+            from app.agent.prompts import PATTERN_INTERRUPT_MODIFIER
+            system_prompt += f"\n\n{PATTERN_INTERRUPT_MODIFIER}"
+            logger.info("[SalesAgent] Loop Breaker Triggered: Injecting Pattern Interrupt")
+            
+        # [PERCEPTUAL RECOVERY]
+        # If the user provided content but history shows we previously said "Hello" (ghost guess)
+        # Force an apology and pivot.
+        if is_substantive and len(history) >= 2:
+             last_asst = history[-2] if history[-2]["role"] == "assistant" else None
+             if last_asst and last_asst["content"].strip().lower() in ["hello", "hi", "hey"]:
+                 from app.agent.prompts import PERCEPTUAL_RECOVERY_MODIFIER
+                 system_prompt += f"\n\n{PERCEPTUAL_RECOVERY_MODIFIER}"
+                 logger.info("[SalesAgent] Force Perceptual Recovery: Overriding previous 'Ghost' greeting.")
+
         # Inject the combined analysis instruction
         system_prompt += f"\n\n{COMBINED_ANALYSIS_INSTRUCTION.format(current_stage=final_stage.value)}"
         
@@ -178,19 +234,43 @@ class SalesAgent(BaseAgent):
         full_response_buffer = []
         is_parsing_analysis = False
         
+        # --- HARDENED SAFEGUARD WINDOW ---
+        # We hold back 40 characters to "look ahead" for any technical tags
+        safeguard_buffer = ""
+        SAFEGUARD_SIZE = 40
+        
         logger.info(f"[SalesAgent] Combined Call Start - Session: {session_id}, Stage: {final_stage.value}")
         
         # 4. Stream from Cerebras
         async for token in cerebras_service.stream_completion(messages):
             full_response_buffer.append(token)
             
-            # Simple check to stop yielding once we hit the analysis block
-            # This prevents the raw JSON from being spoken by the TTS
-            if "<analysis>" in "".join(full_response_buffer[-10:]):
+            if is_parsing_analysis:
+                continue
+
+            safeguard_buffer += token
+            
+            # Check if analysis has started anywhere in the safeguard window
+            # We look for <analysis, Analysis:, or even just the JSON start if it's suspicious
+            lower_buf = safeguard_buffer.lower()
+            if "<analysis" in lower_buf or "analysis:" in lower_buf:
                 is_parsing_analysis = True
-                
-            if not is_parsing_analysis:
-                yield token
+                # Find the start of the tag and yield only what came before it
+                tag_start_idx = lower_buf.find("<analysis") if "<analysis" in lower_buf else lower_buf.find("analysis:")
+                yield safeguard_buffer[:tag_start_idx]
+                safeguard_buffer = ""
+                continue
+
+            # If the safeguard buffer is too long, we can safely yield the surplus
+            if len(safeguard_buffer) > SAFEGUARD_SIZE:
+                # We yield up to N characters before the end
+                yield_len = len(safeguard_buffer) - SAFEGUARD_SIZE
+                yield safeguard_buffer[:yield_len]
+                safeguard_buffer = safeguard_buffer[yield_len:]
+
+        # Flush remaining buffer if we never hit analysis
+        if safeguard_buffer and not is_parsing_analysis:
+            yield safeguard_buffer
 
         full_content = "".join(full_response_buffer)
         
@@ -237,7 +317,7 @@ class SalesAgent(BaseAgent):
     async def generate_response(self, text: str, session_id: str) -> str:
         """Backward compatibility wrapper. Collects the stream and returns full text."""
         response_parts = []
-        async for token in self.generate_stream(text, session_id):
+        async for token in self.generate_stream(session_id, text):
             response_parts.append(token)
         return "".join(response_parts)
 

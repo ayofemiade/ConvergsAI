@@ -5,6 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneOff, Send, User, Bot, Loader2, Sparkles, Mic, Volume2, CheckCircle2 } from 'lucide-react';
 import { apiClient, MessageResponse } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
+import {
+    Room,
+    RoomEvent,
+    Track,
+    RemoteParticipant,
+    RemoteTrack,
+    RemoteTrackPublication,
+    Participant,
+    DataPacket_Kind
+} from 'livekit-client';
+import '@livekit/components-styles';
 
 type CallState = 'idle' | 'ringing' | 'connected' | 'ended';
 type AgentState = 'idle' | 'listening' | 'thinking' | 'speaking';
@@ -32,6 +43,8 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
     const [qualification, setQualification] = useState<any>({});
     const [qualificationComplete, setQualificationComplete] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const roomRef = useRef<Room | null>(null);
+    const audioRElementRef = useRef<HTMLAudioElement | null>(null);
 
     // Auto-scroll to bottom of transcript
     useEffect(() => {
@@ -45,31 +58,94 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
         setCallState('ringing');
         try {
             if (onCallStart) onCallStart();
+
+            // 1. Create a session to get a unique ID (used as room name)
+            console.log("DEBUG: Creating session at http://localhost:4000/api/session/new");
             const { session_id } = await apiClient.createSession(initialPrompt);
             setSessionId(session_id);
+            console.log("DEBUG: Session created:", session_id);
 
-            // Simulate ringing delay
-            setTimeout(() => {
-                setCallState('connected');
-                setAgentState('speaking');
+            // 2. Fetch LiveKit token
+            console.log("DEBUG: Fetching token for room:", session_id);
+            const { token, serverUrl } = await apiClient.getLiveKitToken(session_id);
+            console.log("DEBUG: Token received. serverUrl:", serverUrl);
 
-                // Greeting
-                const greeting: Message = {
-                    id: uuidv4(),
-                    role: 'assistant',
-                    content: "Hi! I'm Emma from ConvergsAI. I noticed you were checking out our enterprise plan. Do you have a minute to chat about your sales goals?",
-                    timestamp: new Date(),
-                };
-                setMessages([greeting]);
-                setTimeout(() => setAgentState('listening'), 3000);
-            }, 2500);
+            // 3. Connect to LiveKit Room
+            console.log("DEBUG: Connecting to room...");
+            const room = new Room({
+                adaptiveStream: true,
+                dynacast: true,
+            });
+            roomRef.current = room;
+
+            // Handle track subscriptions
+            room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+                console.log("DEBUG: Track discovered:", track.kind, "from:", participant.identity);
+                if (track.kind === Track.Kind.Audio) {
+                    const element = track.attach();
+                    document.body.appendChild(element);
+                    setAgentState('speaking');
+                }
+            });
+
+            room.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
+                const isAgentSpeaking = speakers.some(p => p.identity.includes('agent') || (p as any).isAgent);
+                if (isAgentSpeaking) setAgentState('speaking');
+                else setAgentState('listening');
+            });
+
+            room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
+                const decoder = new TextDecoder();
+                const str = decoder.decode(payload);
+                console.log("DEBUG: Data packet received:", str);
+                try {
+                    const data = JSON.parse(str);
+                    if (data.type === 'transcript' || data.type === 'text') {
+                        const newMsg: Message = {
+                            id: uuidv4(),
+                            role: data.role || 'assistant',
+                            content: data.content || data.text,
+                            timestamp: new Date(),
+                        };
+                        setMessages(prev => [...prev, newMsg]);
+                    }
+                    if (data.qualification) setQualification(data.qualification);
+                    if (data.qualification_complete !== undefined) setQualificationComplete(data.qualification_complete);
+                } catch (e) {
+                    console.error('DEBUG: Failed to parse data message:', str);
+                }
+            });
+
+            room.on(RoomEvent.Disconnected, (reason) => {
+                console.log("DEBUG: Room disconnected. Reason:", reason);
+                setCallState('ended');
+                cleanup();
+            });
+
+            await room.connect(serverUrl, token);
+            console.log("DEBUG: Successfully joined LiveKit room!");
+            await room.localParticipant.setMicrophoneEnabled(true);
+            console.log("DEBUG: Microphone access granted and enabled.");
+
+            setCallState('connected');
+            setAgentState('listening');
+
         } catch (error) {
-            console.error('Failed to start call:', error);
+            console.error('DEBUG CRITICAL: LiveKit startCall failed:', error);
+            alert(`Call failed: ${error instanceof Error ? error.message : String(error)}`);
             setCallState('idle');
         }
     };
 
+    const cleanup = () => {
+        if (roomRef.current) {
+            roomRef.current.disconnect();
+            roomRef.current = null;
+        }
+    };
+
     const endCall = () => {
+        cleanup();
         setCallState('ended');
         setTimeout(() => {
             setCallState('idle');
@@ -80,8 +156,13 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
         }, 2000);
     };
 
+    // Keep memory of cleanup on unmount
+    useEffect(() => {
+        return () => cleanup();
+    }, []);
+
     const sendMessage = async () => {
-        if (!inputText.trim() || isLoading) return;
+        if (!inputText.trim() || !roomRef.current) return;
 
         const userMessage: Message = {
             id: uuidv4(),
@@ -91,39 +172,24 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
         };
 
         setMessages((prev) => [...prev, userMessage]);
-        setInputText('');
-        setIsLoading(true);
-        setAgentState('thinking');
+
+        // Send via Data Channel for text-backup/chat-history support
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify({
+            type: 'chat',
+            content: inputText,
+            role: 'user'
+        }));
 
         try {
-            const response: MessageResponse = await apiClient.sendMessage({
-                text: userMessage.content,
-                session_id: sessionId,
+            await roomRef.current.localParticipant.publishData(data, {
+                reliable: true
             });
-
-            if (response.success) {
-                setAgentState('speaking');
-                const assistantMessage: Message = {
-                    id: uuidv4(),
-                    role: 'assistant',
-                    content: response.response,
-                    timestamp: new Date(),
-                };
-                setMessages((prev) => [...prev, assistantMessage]);
-
-                if (response.qualification) setQualification(response.qualification);
-                if (response.qualification_complete !== undefined) setQualificationComplete(response.qualification_complete);
-
-                // Simulate speaking time based on text length
-                const speakingTime = Math.min(Math.max(response.response.length * 50, 2000), 5000);
-                setTimeout(() => setAgentState('listening'), speakingTime);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setAgentState('listening');
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.error("Failed to send data message:", err);
         }
+
+        setInputText('');
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {

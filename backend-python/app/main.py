@@ -1,69 +1,103 @@
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+from uuid import uuid4
+import logging
+
 from app.agent.sales_agent import sales_agent
 import app.agent.memory as memory
-from app.agent.prompts import BASE_AGENT_PROMPT
+from app.agent.intelligence import PRICING_GATE_METADATA_KEY, SESSION_END_KEY
 
-BEHAVIORAL_REFINEMENT_PROMPT = """
-You are a senior human sales and customer success expert with 10+ years of experience.
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api-server")
 
-Your goal is to sound unmistakably human, confident, adaptive, and effective — never scripted.
+app = FastAPI(title="ConvergsAI Control API")
 
---- CORE BEHAVIOR RULES ---
+class SessionRequest(BaseModel):
+    custom_prompt: Optional[str] = None
+    user_id: Optional[str] = None
 
-1. Extreme Brevity (Conversational Flow)
-- Keep responses to 2–3 concise sentences max.
-- Use short, punchy sentences. Avoid long paragraphs.
-- Split multi-point replies into multiple turns. Ask one question, wait for response, then provide the next value point.
+class MessageRequest(BaseModel):
+    text: str
+    session_id: str
 
-2. Objection Handling & Emotional Intelligence
-- Ask ONE question at a time. Never cluster queries.
-- Mirror user emotion: If they seem frustrated, acknowledge it first. "I hear you, let’s simplify this."
-- Address objections once, then pivot to logic or proof.
-- Never use robotic fillers ("I understand your concern", "Let me be transparent").
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "python-ai-core"}
 
-3. Storytelling with Numbers (Proof)
-- Use short, concrete examples with tangible ROI:
-  • "One client had 50+ calls/day; missed calls dropped by 70% in 2 weeks with our AI."
-  • "A real estate team we work with saved 10 hours a week on qualification alone."
-- Keep stories under 2 sentences.
-
-4. Persuasion & Soft Urgency (FOMO)
-- Inject subtle competitive pressure:
-  • "Other agencies using this are returning calls 5x faster than competitors."
-  • "Most teams start seeing qualified leads within the first few days."
-
-5. Language & Natural Flow
-- Use contractions (I'm, you're, that's) and casual connectors (So, Honestly, Look).
-- Vary sentence structure. Never repeat the same opening twice in a row.
-- Speak with authority but like a peer, not a chatbot.
-
-6. Tight Closing
-- Do NOT use repetitive confirmations ("I'll send you an invite", "I'll do that").
-- Ask ONE clear next-step question per turn.
-- If the user is ready, move straight to the next action without extra fluff.
-
---- END BEHAVIOR RULES ---
-"""
-
-
-
-def run():
-    session_id = "cli_test_session"
+@app.post("/session/new")
+async def create_session(request: SessionRequest = None):
+    session_id = str(uuid4())
+    # Initialize session in memory
+    memory.session_memory._ensure_defaults(session_id)
+    if request and request.custom_prompt:
+        # We could store custom prompt in metadata if needed
+        memory.session_memory.set_metadata(session_id, "custom_prompt", request.custom_prompt)
     
-    print("\n--- ConvergsAI Hardened Sales CLI ---")
-    print("Ready. Type 'exit' to quit.\n")
+    logger.info(f"Created new session: {session_id}")
+    return {
+        "success": True,
+        "session_id": session_id,
+        "message": "New session created"
+    }
 
-    while True:
-        # Get current state for display
+@app.post("/message")
+async def handle_message(request: MessageRequest):
+    try:
+        session_id = request.session_id
+        text = request.text
+        
+        # Generate response using SalesAgent
+        response = await sales_agent.generate_response(text, session_id)
+        
+        # Gather metadata for the response
         stage = memory.session_memory.get_metadata(session_id, "stage")
-        turns = memory.session_memory.turns_in_stage(session_id)
+        qualification = {
+            "business_type": memory.session_memory.get_metadata(session_id, "business_type"),
+            "goal": memory.session_memory.get_metadata(session_id, "goal"),
+            "urgency": memory.session_memory.get_metadata(session_id, "urgency"),
+            "budget_readiness": memory.session_memory.get_metadata(session_id, "budget_readiness"),
+        }
+        qualification_complete = memory.session_memory.get_metadata(session_id, PRICING_GATE_METADATA_KEY) or False
         
-        user_input = input(f"[{stage.value if hasattr(stage, 'value') else stage} - Turn {turns}] User: ")
-        
-        if user_input.lower() == "exit":
-            break
+        return {
+            "success": True,
+            "response": response,
+            "session_id": session_id,
+            "stage": stage.value if hasattr(stage, "value") else str(stage),
+            "qualification": qualification,
+            "qualification_complete": qualification_complete
+        }
+    except Exception as e:
+        logger.error(f"Error handling message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-        response = sales_agent.handle_text(user_input, session_id)
-        print(f"Agent: {response}\n")
+@app.get("/session/{session_id}")
+async def get_session(session_id: str):
+    history = memory.session_memory.get_history(session_id)
+    if not history and session_id not in memory.session_memory._metadata:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    stage = memory.session_memory.get_metadata(session_id, "stage")
+    return {
+        "session_id": session_id,
+        "stage": stage.value if hasattr(stage, "value") else str(stage),
+        "message_count": len(history),
+        "qualification": {
+            "business_type": memory.session_memory.get_metadata(session_id, "business_type"),
+            "goal": memory.session_memory.get_metadata(session_id, "goal"),
+            "urgency": memory.session_memory.get_metadata(session_id, "urgency"),
+            "budget_readiness": memory.session_memory.get_metadata(session_id, "budget_readiness"),
+        },
+        "qualification_complete": memory.session_memory.get_metadata(session_id, PRICING_GATE_METADATA_KEY) or False
+    }
+
+@app.delete("/session/{session_id}")
+async def delete_session(session_id: str):
+    memory.session_memory.clear_session(session_id)
+    return {"success": True, "message": f"Session {session_id} deleted"}
 
 if __name__ == "__main__":
-    run()
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -7,6 +7,7 @@ class SalesLLM(llm.LLM):
     def __init__(self, session_id: str):
         super().__init__()
         self.session_id = session_id
+        self.last_transcript = None # Track to avoid Turn Redundancy
 
     def chat(
         self,
@@ -40,49 +41,157 @@ class SalesLLMStream(llm.LLMStream):
         """
         Main loop for the stream. Executes SalesAgent logic and yields chunks.
         """
-        # 1. Safely extract last user message
-        user_msg = "Hello"
+        # 1. High-Fidelity Transcript Synchronization
+        # We wait for real content if we are speculatively starting.
+        # We prefer "final" transcripts over partial ones.
+        user_msg = None
+        import asyncio
+        start_time = asyncio.get_event_loop().time()
         
-        # Use the base class property which is verified in this SDK version
-        messages = getattr(self.chat_ctx, "messages", [])
-        
-        if messages:
-            last_msg = messages[-1]
-            if last_msg.role in (llm.ChatRole.USER, "user"):
-                # Handle potential list-based content in newer LiveKit versions
-                content = last_msg.content
-                if isinstance(content, str):
-                    user_msg = content
-                elif isinstance(content, list):
-                    # Extract text from content chunks
-                    text_parts = []
-                    for chunk in content:
-                        if hasattr(chunk, "text"):
-                            text_parts.append(chunk.text)
-                        elif isinstance(chunk, dict) and "text" in chunk:
-                            text_parts.append(chunk["text"])
-                        elif isinstance(chunk, str):
-                            text_parts.append(chunk)
-                    user_msg = " ".join(text_parts)
+        while (asyncio.get_event_loop().time() - start_time) < 1.5: # Max 1.5s wait
+            messages = getattr(self.chat_ctx, "messages", [])
+            has_rich_content = False
+            
+            # Find the MOST RECENT user message in the context
+            last_user_msg = None
+            for msg in reversed(messages):
+                if msg.role in (llm.ChatRole.USER, "user"):
+                    last_user_msg = msg
+                    break
+            
+            if last_user_msg:
+                content = last_user_msg.content
+                current_text = ""
+                if isinstance(content, str): current_text = content
+                elif isinstance(content, list): current_text = " ".join([c.text if hasattr(c, "text") else str(c) for c in content])
                 
+                # [ANTI-REDUNDANCY]
+                # If this is the SAME text we processed last turn, it's a stale transcript.
+                # Keep waiting for the new one.
+                if current_text == getattr(self.llm, "last_transcript", None) and current_text != "":
+                    logger.info(f"[SalesLLM] Waiting: context contains stale transcript ('{current_text[:20]}')")
+                    await asyncio.sleep(0.2)
+                    continue
+
+                if current_text.strip():
+                    user_msg = current_text
+                    has_rich_content = True
+                    if len(user_msg) > 15: 
+                        break
+            
+            if has_rich_content:
+                await asyncio.sleep(0.1)
+                continue
+            
+            await asyncio.sleep(0.1)
+
+        # [INTELLIGENCE: Voice Restoration]
+        # Always update tracker if we found something new
+        if user_msg:
+            self.llm.last_transcript = user_msg
+
+        has_any_user_msg = any(m.role in (llm.ChatRole.USER, "user") for m in getattr(self.chat_ctx, "messages", []))
+        
+        if not user_msg and has_any_user_msg:
+            # We have user history, but couldn't find a NEW transcript. 
+            logger.info("[SalesLLM] No NEW transcript found. Skipping to avoid Turn Redundancy.")
+            self._event_ch.close()
+            return
+
+        # If user_msg is still None here, it means it's likely the first turn (initial greeting).
+        if user_msg is None:
+            user_msg = "" # Allow empty string for the initial greeting
+            logger.info("[SalesLLM] Initial turn detected. Proceeding with empty user_msg.")
+
         session_id = self.session_id
+
+        # 1. STT Noise Gate
+        if not user_msg:
+            # Allow empty msg (Initial Greeting case)
+            pass
+        else:
+            noise_patterns = ["uh", "um", "ah", "oh", "..", "..."]
+            clean_msg = user_msg.strip().lower()
+            if len(clean_msg) < 3 and clean_msg not in ["ok", "hi", "no", "go", "i"]:
+                logger.info(f"[SalesLLM] STT Noise Gate: Filtering out '{user_msg}'")
+                self._event_ch.close()
+                return
+
+            if clean_msg in noise_patterns:
+                logger.info(f"[SalesLLM] STT Noise Gate: Filtering out filler '{user_msg}'")
+                self._event_ch.close()
+                return
 
         logger.info(f"[SalesLLM] Processing input for session {session_id}: {user_msg}")
         
+        chunk_buffer = ""
+        tokens_yielded = 0
+        initial_msg = user_msg # Store for correction check
+
+        def _get_text(msg_content):
+            if isinstance(msg_content, str): return msg_content
+            if isinstance(msg_content, list): return " ".join([c.text if hasattr(c, "text") else str(c) for c in msg_content])
+            return ""
+
         try:
             # 2. Call the brain with TRUE STREAMING
-            # sales_agent.generate_stream yields tokens in real-time
-            async for token in sales_agent.generate_stream(user_msg, session_id):
-                # SDK 1.3.10 uses delta field, not choices list
-                self._event_ch.send_nowait(
-                    llm.ChatChunk(
-                        id="", # Optional ID
-                        delta=llm.ChoiceDelta(
-                            role="assistant",
-                            content=token
+            async for token in sales_agent.generate_stream(session_id, user_msg):
+                tokens_yielded += 1
+                
+                # [LATE CORRECTION CHECK]
+                # Every 5 tokens, check if a much better transcript has appeared
+                if tokens_yielded % 5 == 0:
+                    messages = getattr(self.chat_ctx, "messages", [])
+                    
+                    # Find last user msg again
+                    curr_user_msg = None
+                    for msg in reversed(messages):
+                        if msg.role in (llm.ChatRole.USER, "user"):
+                            curr_user_msg = msg
+                            break
+                    
+                    if curr_user_msg:
+                        curr_msg_text = _get_text(curr_user_msg.content)
+                        if len(curr_msg_text) > len(initial_msg) + 15:
+                            # User said way more than we thought. Pivot.
+                            logger.warning(f"[SalesLLM] Late Correction! Predicted: '{initial_msg}', Real: '{curr_msg_text}'")
+                            self._event_ch.send_nowait(
+                                llm.ChatChunk(
+                                    id="",
+                                    delta=llm.ChoiceDelta(role="assistant", content="Actually, wait, I think I missed that first part. ")
+                                )
+                            )
+                            break
+
+                # Hybrid Chunking
+                if tokens_yielded <= 3:
+                     self._event_ch.send_nowait(
+                        llm.ChatChunk(
+                            id="",
+                            delta=llm.ChoiceDelta(role="assistant", content=token)
                         )
                     )
+                     continue
+
+                chunk_buffer += token
+                if any(p in token for p in [" ", ".", "!", "?", ",", "\n"]):
+                    self._event_ch.send_nowait(
+                        llm.ChatChunk(
+                            id="",
+                            delta=llm.ChoiceDelta(role="assistant", content=chunk_buffer)
+                        )
+                    )
+                    chunk_buffer = ""
+            
+            # Final flush
+            if chunk_buffer:
+                self._event_ch.send_nowait(
+                    llm.ChatChunk(
+                        id="",
+                        delta=llm.ChoiceDelta(role="assistant", content=chunk_buffer)
+                    )
                 )
+
         except Exception as e:
             logger.error(f"[SalesLLM] Error in streaming response: {e}", exc_info=True)
         finally:

@@ -68,7 +68,7 @@ async def entrypoint(ctx: JobContext):
         min_endpointing_delay=0.4, # Start thinking 400ms after user pauses
         preemptive_generation=True,
         resume_false_interruption=True,
-        false_interruption_timeout=1.2, # Recover faster from accidental interruptions
+        false_interruption_timeout=1.5, # Increased for maximum stability during hybrid chunking
     )
 
     usage_collector = metrics.UsageCollector()
