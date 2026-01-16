@@ -48,7 +48,7 @@ class SalesLLMStream(llm.LLMStream):
         import asyncio
         start_time = asyncio.get_event_loop().time()
         
-        while (asyncio.get_event_loop().time() - start_time) < 1.5: # Max 1.5s wait
+        while (asyncio.get_event_loop().time() - start_time) < 0.6: # Reduced from 1.5s to 0.6s for snappiness
             messages = getattr(self.chat_ctx, "messages", [])
             has_rich_content = False
             
@@ -67,23 +67,22 @@ class SalesLLMStream(llm.LLMStream):
                 
                 # [ANTI-REDUNDANCY]
                 # If this is the SAME text we processed last turn, it's a stale transcript.
-                # Keep waiting for the new one.
                 if current_text == getattr(self.llm, "last_transcript", None) and current_text != "":
-                    logger.info(f"[SalesLLM] Waiting: context contains stale transcript ('{current_text[:20]}')")
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(0.05)
                     continue
 
                 if current_text.strip():
                     user_msg = current_text
-                    has_rich_content = True
-                    if len(user_msg) > 15: 
+                    # If we have a decent amount of text, stop waiting immediately
+                    if len(user_msg) > 5:
                         break
+                    has_rich_content = True
             
             if has_rich_content:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 continue
             
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
 
         # [INTELLIGENCE: Voice Restoration]
         # Always update tracker if we found something new

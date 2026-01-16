@@ -65,7 +65,7 @@ async def entrypoint(ctx: JobContext):
         tts="cartesia/sonic-2:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
-        min_endpointing_delay=0.4, # Start thinking 400ms after user pauses
+        min_endpointing_delay=0.3, # Reduced from 0.4 to 0.3 for snappier feel
         preemptive_generation=True,
         resume_false_interruption=True,
         false_interruption_timeout=1.5, # Increased for maximum stability during hybrid chunking

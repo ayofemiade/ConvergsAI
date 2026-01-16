@@ -235,38 +235,65 @@ class SalesAgent(BaseAgent):
         is_parsing_analysis = False
         
         # --- HARDENED SAFEGUARD WINDOW ---
-        # We hold back 40 characters to "look ahead" for any technical tags
         safeguard_buffer = ""
-        SAFEGUARD_SIZE = 40
+        SAFEGUARD_SIZE = 25 # Increased slightly for safer word detection
         
         logger.info(f"[SalesAgent] Combined Call Start - Session: {session_id}, Stage: {final_stage.value}")
         
+        tokens_yielded = 0
+        analysis_patterns = ["<analysis", "analysis:", '{"intent"', '"intent":']
+        
         # 4. Stream from Cerebras
-        async for token in cerebras_service.stream_completion(messages):
+        async for token in cerebras_service.stream_completion(messages, max_tokens=250):
+            tokens_yielded += 1
             full_response_buffer.append(token)
             
             if is_parsing_analysis:
                 continue
 
             safeguard_buffer += token
-            
-            # Check if analysis has started anywhere in the safeguard window
-            # We look for <analysis, Analysis:, or even just the JSON start if it's suspicious
             lower_buf = safeguard_buffer.lower()
-            if "<analysis" in lower_buf or "analysis:" in lower_buf:
+            
+            # 1. Proactive Tag Detection
+            found_tag = None
+            for p in analysis_patterns:
+                if p in lower_buf:
+                    found_tag = p
+                    break
+            
+            if found_tag:
                 is_parsing_analysis = True
-                # Find the start of the tag and yield only what came before it
-                tag_start_idx = lower_buf.find("<analysis") if "<analysis" in lower_buf else lower_buf.find("analysis:")
-                yield safeguard_buffer[:tag_start_idx]
+                tag_start_idx = lower_buf.find(found_tag)
+                # Yield only the clean text before the tag
+                clean_text = safeguard_buffer[:tag_start_idx]
+                if clean_text:
+                    yield clean_text
                 safeguard_buffer = ""
                 continue
 
-            # If the safeguard buffer is too long, we can safely yield the surplus
+            # 2. Latency Optimization (Safe Yield)
+            # For the first turn, we can yield if we have a word and no tag risk
+            # We check if the buffer ends with a space or punctuation to avoid partial words
+            if tokens_yielded < 10 and any(p in safeguard_buffer for p in [" ", ".", "!", "?", "\n"]):
+                # Sanity check: ensure we aren't in the middle of a word that looks like "Analysis"
+                # If the buffer is short and doesn't look like any pattern start, yield it
+                if not any(p.startswith(lower_buf.strip()) for p in analysis_patterns):
+                    yield safeguard_buffer
+                    safeguard_buffer = ""
+                    continue
+
+            # 3. Guarded Surplus Yield
             if len(safeguard_buffer) > SAFEGUARD_SIZE:
-                # We yield up to N characters before the end
                 yield_len = len(safeguard_buffer) - SAFEGUARD_SIZE
-                yield safeguard_buffer[:yield_len]
-                safeguard_buffer = safeguard_buffer[yield_len:]
+                # Only yield up to the last whitespace to keep words whole
+                last_space = safeguard_buffer[:yield_len].rfind(" ")
+                if last_space != -1:
+                    yield safeguard_buffer[:last_space + 1]
+                    safeguard_buffer = safeguard_buffer[last_space + 1:]
+                else:
+                    # Fallback if no space, just yield the surplus
+                    yield safeguard_buffer[:yield_len]
+                    safeguard_buffer = safeguard_buffer[yield_len:]
 
         # Flush remaining buffer if we never hit analysis
         if safeguard_buffer and not is_parsing_analysis:
