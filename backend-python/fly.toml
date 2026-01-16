@@ -1,0 +1,20 @@
+# fly.toml app configuration file for backend-python
+app = 'convergsai-python'
+primary_region = 'ams'
+
+[processes]
+  app = "python -m app.main"
+  worker = "python -m app.worker start"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb' # Increased memory for Python ML worker
+  cpu_kind = 'shared'
+  cpus = 1
