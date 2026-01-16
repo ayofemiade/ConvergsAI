@@ -53,6 +53,12 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
         }
     }, [messages, agentState]);
 
+    // Runtime config check
+    useEffect(() => {
+        console.log("DEBUG: PhoneCallUI Initialized");
+        console.log("DEBUG: Target API Gateway:", process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
+    }, []);
+
     // Start call logic
     const startCall = async () => {
         setCallState('ringing');

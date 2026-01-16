@@ -27,24 +27,34 @@ const PORT = process.env.PORT || 4000;
 const PYTHON_AI_URL = process.env.PYTHON_AI_URL || 'http://localhost:8000';
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000'];
+  : ['http://localhost:3000', 'https://ai-sales-agent-theta.vercel.app'];
 
 // Security Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // CORS Configuration
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
 
-    if (ALLOWED_ORIGINS.indexOf(origin) !== -1) {
+    // Check if origin is allowed or if it's a localhost variation
+    const isAllowed = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed)) ||
+      origin.includes('localhost') ||
+      origin.includes('vercel.app');
+
+    if (isAllowed) {
       callback(null, true);
     } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'bypass-tunnel-reminder'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
 // Body Parser

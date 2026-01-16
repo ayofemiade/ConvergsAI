@@ -47,15 +47,28 @@ class APIClient {
         this.baseURL = baseURL;
     }
 
+    async fetchWithHeaders(endpoint: string, options: RequestInit = {}) {
+        // Ensure robust URL joining regardless of trailing slashes
+        const base = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
+        const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        const url = endpoint.startsWith('http') ? endpoint : `${base}${path}`;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'bypass-tunnel-reminder': 'true', // Bypasses localtunnel's splash screen
+            ...(options.headers || {}),
+        };
+
+        const response = await fetch(url, { ...options, headers });
+        return response;
+    }
+
     /**
      * Create a new conversation session
      */
     async createSession(customPrompt?: string): Promise<{ session_id: string }> {
-        const response = await fetch(`${this.baseURL}/api/session/new`, {
+        const response = await this.fetchWithHeaders('/api/session/new', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(customPrompt ? { custom_prompt: customPrompt } : {}),
         });
 
@@ -71,11 +84,8 @@ class APIClient {
      * Send a message to the AI agent
      */
     async sendMessage(request: MessageRequest): Promise<MessageResponse> {
-        const response = await fetch(`${this.baseURL}/api/message`, {
+        const response = await this.fetchWithHeaders('/api/message', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(request),
         });
 
@@ -91,7 +101,7 @@ class APIClient {
      * Get session information
      */
     async getSession(sessionId: string): Promise<SessionInfo> {
-        const response = await fetch(`${this.baseURL}/api/session/${sessionId}`);
+        const response = await this.fetchWithHeaders(`/api/session/${sessionId}`);
 
         if (!response.ok) {
             throw new Error(`Failed to get session: ${response.statusText}`);
@@ -104,7 +114,7 @@ class APIClient {
      * Delete a session
      */
     async deleteSession(sessionId: string): Promise<void> {
-        const response = await fetch(`${this.baseURL}/api/session/${sessionId}`, {
+        const response = await this.fetchWithHeaders(`/api/session/${sessionId}`, {
             method: 'DELETE',
         });
 
@@ -117,11 +127,8 @@ class APIClient {
      * Get LiveKit token
      */
     async getLiveKitToken(roomName: string, identity?: string): Promise<{ token: string; serverUrl: string }> {
-        const response = await fetch(`${this.baseURL}/api/livekit/token`, {
+        const response = await this.fetchWithHeaders('/api/livekit/token', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({ roomName, identity }),
         });
 
@@ -136,7 +143,7 @@ class APIClient {
      * Health check
      */
     async healthCheck(): Promise<{ status: string; services: any }> {
-        const response = await fetch(`${this.baseURL}/health`);
+        const response = await this.fetchWithHeaders('/health');
 
         if (!response.ok) {
             throw new Error('Health check failed');
