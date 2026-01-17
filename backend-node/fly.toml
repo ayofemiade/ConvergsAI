@@ -1,6 +1,12 @@
-# fly.toml app configuration file for backend-node
+# fly.toml app configuration file generated for convergsai-node on 2026-01-17T14:43:42Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'convergsai-node'
 primary_region = 'ams'
+
+[build]
 
 [http_service]
   internal_port = 4000
@@ -11,6 +17,7 @@ primary_region = 'ams'
   processes = ['app']
 
 [[vm]]
-  memory = '512mb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
