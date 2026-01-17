@@ -126,24 +126,28 @@ app.get('/', (req, res) => {
 // Create New Session
 app.post('/api/session/new', async (req, res) => {
   try {
-    // Forward any custom prompt configuration
     const payload = req.body || {};
+    console.log(`DEBUG: Requesting new session from Python AI: ${PYTHON_AI_URL}/session/new`);
 
     const response = await axios.post(`${PYTHON_AI_URL}/session/new`, payload, {
-      timeout: 5000
+      timeout: 10000 // Increased to 10s to allow for Fly.io wake-up
     });
 
+    console.log(`DEBUG: Python AI responded: ${response.status} - Session ID: ${response.data.session_id}`);
     res.json(response.data);
   } catch (error) {
-    console.error('Error creating session:', error.message);
+    console.error('CRITICAL: Error creating session on Python backend:', error.message);
 
-    // Fallback: create session ID locally if Python backend is down
-    const sessionId = uuidv4();
-    res.json({
-      success: true,
-      session_id: sessionId,
-      message: 'New session created',
-      fallback: true
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      console.error('DEBUG: Python AI is likely sleeping or booting up.');
+    }
+
+    // We no longer fallback silently. We want to know if Python is down.
+    res.status(503).json({
+      success: false,
+      error: 'AI Backend Unavailable',
+      message: 'The AI brain is waking up or unreachable. Please try again in a few seconds.',
+      details: error.message
     });
   }
 });
