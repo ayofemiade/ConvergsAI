@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneOff, Send, User, Bot, Loader2, Sparkles, Mic, Volume2, CheckCircle2, X, ChevronRight } from 'lucide-react';
+import { Phone, PhoneOff, Send, User, Bot, Loader2, Sparkles, Mic, Volume2, CheckCircle2, X, ChevronRight, Wifi, Battery, SignalHigh, Globe } from 'lucide-react';
 import { apiClient, MessageResponse } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -259,233 +259,352 @@ export default function PhoneCallUI({
         <div className="w-full h-full flex flex-col lg:flex-row gap-4 lg:gap-6 p-1">
 
             {/* PHONE INTERFACE */}
-            <div className="flex-1 relative group">
-                {/* Phone Bezel/Frame */}
-                <div className="absolute -inset-1 bg-gradient-to-b from-slate-700 to-slate-900 rounded-[2.5rem] opacity-50 blur-sm pointer-events-none" />
+            <div className="flex-1 relative group max-w-[420px] mx-auto lg:max-w-none w-full">
 
-                <div className="relative h-full bg-slate-950 rounded-[2rem] border-[6px] border-slate-800 shadow-2xl overflow-hidden flex flex-col">
+                {/* Phone Body Shell - Realistic Depth */}
+                <div className="relative h-full bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40">
 
-                    {/* Dynamic Status Bar (Notch) */}
-                    <div className="h-12 sm:h-14 bg-slate-900 flex items-center justify-center relative z-20 border-b border-white/5 px-4">
-                        <div className="flex-1 lg:hidden">
-                            {callState === 'connected' && (
-                                <button
-                                    onClick={() => setShowMobileStats(!showMobileStats)}
-                                    className="p-2 text-slate-400 hover:text-white transition-colors"
-                                >
-                                    <Sparkles size={18} />
-                                </button>
-                            )}
+                    {/* Screen Reflection Overlay (Glass Effect) */}
+                    <div className="absolute inset-0 z-50 pointer-events-none">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white opacity-[0.02] via-transparent to-transparent" />
+                        <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-white/[0.05] to-transparent" />
+                    </div>
+
+                    {/* Interior Screen Boundary (The Display) */}
+                    <div className="relative flex-1 bg-black rounded-[2.8rem] overflow-hidden flex flex-col ring-1 ring-white/10 shadow-[inset_0_0_80px_rgba(0,0,0,0.9)]">
+
+                        {/* MOCK STATUS BAR (iOS Style) */}
+                        <div className="h-14 flex items-center justify-between px-10 z-40 text-white/95">
+                            <span className="text-[12px] font-black tracking-tighter flex items-center gap-1.5">
+                                9:41
+                                <motion.div
+                                    animate={{ opacity: [1, 0, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="w-1.5 h-1.5 rounded-full bg-blue-500"
+                                />
+                            </span>
+                            <div className="flex items-center gap-2.5 opacity-70">
+                                <SignalHigh size={14} strokeWidth={2.5} />
+                                <Wifi size={14} strokeWidth={2.5} />
+                                <div className="flex items-center gap-1">
+                                    <div className="w-[22px] h-[11px] rounded-[3.5px] border border-white/30 p-[1.5px] flex items-center relative">
+                                        <div className="h-full w-[88%] bg-white rounded-[1.5px]" />
+                                    </div>
+                                    <div className="w-[2px] h-[4px] bg-white/30 rounded-r-full" />
+                                </div>
+                            </div>
                         </div>
 
-                        <motion.div
-                            animate={{
-                                width: agentState === 'speaking' ? '160px' : '100px',
-                                backgroundColor: agentState === 'speaking' ? '#22c55e' :
-                                    agentState === 'thinking' ? '#a855f7' : '#334155'
-                            }}
-                            className="h-7 sm:h-8 rounded-full flex items-center justify-center gap-1.5 sm:gap-2 overflow-hidden transition-colors duration-500 mx-auto"
-                        >
-                            {callState === 'connected' ? (
-                                <>
-                                    {agentState === 'speaking' && <Volume2 size={12} className="text-black animate-pulse" />}
-                                    {agentState === 'thinking' && <Sparkles size={12} className="text-white animate-spin" />}
-                                    {agentState === 'listening' && <Mic size={12} className="text-white" />}
+                        {/* DYNAMIC ISLAND HUB (Interactive) */}
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50">
+                            <motion.div
+                                layout
+                                animate={{
+                                    width: agentState === 'speaking' ? 240 :
+                                        agentState === 'thinking' ? 180 :
+                                            callState === 'connected' ? 120 : 160,
+                                    height: 36,
+                                }}
+                                transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                                className="bg-black border border-white/20 shadow-2xl rounded-full flex items-center justify-center gap-3 px-5 shrink-0 overflow-hidden"
+                            >
+                                <AnimatePresence mode="wait">
+                                    {callState === 'connected' ? (
+                                        <motion.div
+                                            key={agentState}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.8 }}
+                                            className="flex items-center gap-2 whitespace-nowrap"
+                                        >
+                                            {agentState === 'speaking' && (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex gap-[2px] h-3.5 items-center">
+                                                        {[0.1, 0.4, 0.2, 0.5, 0.3, 0.45, 0.25].map((delay, i) => (
+                                                            <motion.div
+                                                                key={i}
+                                                                animate={{ height: [3, 14, 3] }}
+                                                                transition={{ duration: 0.6, repeat: Infinity, delay }}
+                                                                className="w-[2px] bg-green-500 rounded-full"
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-[0.15em] glow-text">Emma Speaking</span>
+                                                </div>
+                                            )}
+                                            {agentState === 'thinking' && (
+                                                <div className="flex items-center gap-2.5">
+                                                    <motion.div
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                                                    >
+                                                        <Sparkles size={12} className="text-purple-400" />
+                                                    </motion.div>
+                                                    <span className="text-[10px] font-black text-slate-200 uppercase tracking-tighter">System Analyzing</span>
+                                                </div>
+                                            )}
+                                            {agentState === 'listening' && (
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.8)]" />
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">LIVE AGENT</span>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="idle"
+                                            className="flex items-center gap-2.5 opacity-60 hover:opacity-100 transition-opacity"
+                                        >
+                                            <Globe size={11} className="text-white" />
+                                            <span className="text-[10px] font-black text-white uppercase tracking-[0.4em]">ConvergsAI</span>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        </div>
 
-                                    <span className={`text-[10px] sm:text-xs font-bold ${agentState === 'speaking' ? 'text-black' : 'text-white'}`}>
-                                        {agentState === 'speaking' ? 'Emma Speaking' :
-                                            agentState === 'thinking' ? 'AI Thinking' : 'Listening'}
-                                    </span>
-                                </>
-                            ) : (
-                                <span className="text-[10px] sm:text-xs font-medium text-slate-300">ConvergsAI Agent</span>
-                            )}
-                        </motion.div>
+                        {/* Home Indicator (The sleek bar at bottom) */}
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-36 h-[5px] bg-white/25 rounded-full z-40 shadow-sm" />
 
-                        <div className="flex-1 lg:hidden" />
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="flex-1 relative flex flex-col bg-gradient-to-b from-slate-900 to-slate-950">
-                        <AnimatePresence mode="wait">
-                            {callState === 'idle' && (
-                                <motion.div
-                                    className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6"
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                >
-                                    <div className="relative">
-                                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                            <Bot size={64} className="text-white" />
-                                        </div>
-                                        <div className="absolute -bottom-2 -right-2 bg-green-500 text-xs font-bold text-black px-3 py-1 rounded-full border-2 border-slate-900">
-                                            ONLINE
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white mb-2">Emma</h2>
-                                        <p className="text-slate-300 font-medium">Top-performing AI Sales Agent</p>
-                                    </div>
-                                    <button
-                                        onClick={startCall}
-                                        className="btn-primary w-full max-w-xs py-4 text-lg flex items-center justify-center gap-3 group"
-                                        aria-label="Start demo call with Emma"
+                        {/* Main Content Area */}
+                        <div className="flex-1 relative flex flex-col bg-black">
+                            <AnimatePresence mode="wait">
+                                {callState === 'idle' && (
+                                    <motion.div
+                                        className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-12"
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     >
-                                        <Phone size={24} className="group-hover:rotate-12 transition-transform" />
-                                        <span>Start Demo Call</span>
-                                    </button>
-                                </motion.div>
-                            )}
-
-                            {callState === 'ringing' && (
-                                <motion.div
-                                    className="flex-1 flex flex-col items-center justify-center space-y-8"
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                >
-                                    <div className="relative">
-                                        {[1, 2, 3].map((i) => (
+                                        <div className="relative group">
+                                            <div className="absolute inset-0 bg-blue-500/20 blur-[80px] rounded-full group-hover:bg-blue-400/30 transition-all duration-700" />
                                             <motion.div
-                                                key={i}
-                                                className="absolute inset-0 rounded-full border border-blue-500"
-                                                initial={{ scale: 1, opacity: 0.5 }}
-                                                animate={{ scale: 2, opacity: 0 }}
-                                                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
-                                            />
-                                        ))}
-                                        <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center relative z-10">
-                                            <Phone size={40} className="text-white fill-white" />
-                                        </div>
-                                    </div>
-                                    <p className="text-lg text-slate-200 animate-pulse font-medium">Connecting to Emma...</p>
-                                </motion.div>
-                            )}
-
-                            {callState === 'connected' && (
-                                <motion.div
-                                    className="flex-1 flex flex-col h-full relative"
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                >
-                                    {/* Real-time Transcription Overlay */}
-                                    <AnimatePresence>
-                                        {liveTranscript && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0 }}
-                                                className="absolute bottom-24 left-4 right-4 z-30 pointer-events-none"
+                                                whileHover={{ scale: 1.05 }}
+                                                className="w-40 h-40 rounded-[3rem] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl relative z-10 p-1"
                                             >
-                                                <div className={`
+                                                <div className="w-full h-full bg-slate-900 rounded-[2.8rem] flex items-center justify-center overflow-hidden">
+                                                    <Bot size={80} className="text-white" />
+                                                </div>
+                                            </motion.div>
+                                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-[10px] font-black text-black px-4 py-1 rounded-full border-4 border-slate-950 shadow-lg relative z-20">
+                                                SECURE LINE
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Emma</h2>
+                                            <p className="text-slate-400 font-medium text-sm max-w-[200px] leading-relaxed">
+                                                Secure, high-performance AI voice intelligence.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={startCall}
+                                            className="w-full max-w-[240px] py-4 bg-white text-black rounded-3xl font-bold flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+                                            aria-label="Call Emma"
+                                        >
+                                            <Phone size={20} fill="black" />
+                                            <span>Start Call</span>
+                                        </button>
+                                    </motion.div>
+                                )}
+
+                                {callState === 'ringing' && (
+                                    <motion.div
+                                        className="flex-1 flex flex-col items-center justify-between py-20 relative overflow-hidden"
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    >
+                                        {/* Animated Ringing Background */}
+                                        <div className="absolute inset-0 z-0">
+                                            <motion.div
+                                                animate={{
+                                                    scale: [1, 1.1, 1],
+                                                    opacity: [0.3, 0.4, 0.3]
+                                                }}
+                                                transition={{ duration: 8, repeat: Infinity }}
+                                                className="absolute inset-0 bg-blue-600/20 blur-[120px]"
+                                            />
+                                        </div>
+
+                                        <div className="relative z-10 flex flex-col items-center gap-6">
+                                            <div className="relative">
+                                                <motion.div
+                                                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                                                    transition={{ duration: 2, repeat: Infinity }}
+                                                    className="absolute -inset-4 rounded-full border border-blue-500/50"
+                                                />
+                                                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-500/40 relative z-10 p-1">
+                                                    <div className="w-full h-full bg-slate-900 rounded-full flex items-center justify-center overflow-hidden">
+                                                        <Bot size={56} className="text-blue-400" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-center">
+                                                <h2 className="text-2xl font-bold text-white mb-1">Emma</h2>
+                                                <p className="text-blue-400 text-sm font-bold uppercase tracking-[0.2em] animate-pulse">ConvergsAI Agent</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="relative z-10 flex flex-col items-center gap-4 w-full px-12">
+                                            <p className="text-slate-400 text-xs font-medium mb-8">Calling via ConvergsAI...</p>
+                                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: "0%" }}
+                                                    animate={{ width: "100%" }}
+                                                    transition={{ duration: 3 }}
+                                                    className="h-full bg-blue-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {callState === 'connected' && (
+                                    <motion.div
+                                        className="flex-1 flex flex-col h-full relative"
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                    >
+                                        {/* Real-time Transcription Overlay */}
+                                        <AnimatePresence>
+                                            {liveTranscript && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className="absolute bottom-24 left-4 right-4 z-30 pointer-events-none"
+                                                >
+                                                    <div className={`
                                                     p-4 rounded-2xl backdrop-blur-md border shadow-xl max-w-[90%] mx-auto
                                                     ${liveTranscript.role === 'user'
-                                                        ? 'bg-blue-600/80 border-blue-400/30'
-                                                        : 'bg-slate-800/80 border-white/10'}
+                                                            ? 'bg-blue-600/80 border-blue-400/30'
+                                                            : 'bg-slate-800/80 border-white/10'}
                                                 `}>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        {liveTranscript.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
-                                                            {liveTranscript.role === 'user' ? 'You' : 'Emma'} is speaking...
-                                                        </span>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            {liveTranscript.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                                                                {liveTranscript.role === 'user' ? 'You' : 'Emma'} is speaking...
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm font-medium leading-relaxed italic">
+                                                            "{liveTranscript.text}"
+                                                        </p>
                                                     </div>
-                                                    <p className="text-sm font-medium leading-relaxed italic">
-                                                        "{liveTranscript.text}"
-                                                    </p>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                    {/* Live Transcript Area */}
-                                    <div
-                                        ref={scrollRef}
-                                        className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar scroll-smooth"
-                                    >
-                                        {messages.map((msg) => (
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                        {/* Phone Screen Background Elements */}
+                                        <div className="absolute inset-0 pointer-events-none">
                                             <motion.div
-                                                key={msg.id}
-                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                            >
-                                                <div className={`
-                                                    max-w-[88%] sm:max-w-[85%] px-3 py-2 sm:px-4 sm:py-3 rounded-2xl text-[13px] sm:text-sm leading-relaxed shadow-sm
-                                                    ${msg.role === 'user'
-                                                        ? 'bg-blue-600 text-white rounded-br-none'
-                                                        : 'bg-slate-800 text-slate-100 rounded-bl-none border border-white/5'}
-                                                `}>
-                                                    {msg.content}
-                                                </div>
-                                            </motion.div>
-                                        ))}
-                                        {agentState === 'thinking' && (
-                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                                                <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-none border border-white/5 flex gap-1">
-                                                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </div>
-
-                                    {/* Controls */}
-                                    <div className="p-4 bg-slate-900 border-t border-white/5">
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={inputText}
-                                                onChange={(e) => setInputText(e.target.value)}
-                                                onKeyPress={handleKeyPress}
-                                                placeholder="Type your reply..."
-                                                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                                                animate={{
+                                                    scale: [1, 1.2, 1],
+                                                    opacity: [0.1, 0.15, 0.1]
+                                                }}
+                                                transition={{ duration: 10, repeat: Infinity }}
+                                                className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500 blur-[100px] rounded-full"
                                             />
-                                            <button
-                                                onClick={sendMessage}
-                                                disabled={!inputText.trim() || isLoading}
-                                                className="p-3 bg-blue-600 rounded-xl text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                aria-label="Send message"
-                                            >
-                                                <Send size={20} />
+                                            <motion.div
+                                                animate={{
+                                                    scale: [1, 1.3, 1],
+                                                    opacity: [0.05, 0.1, 0.05]
+                                                }}
+                                                transition={{ duration: 15, repeat: Infinity, delay: 2 }}
+                                                className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500 blur-[80px] rounded-full"
+                                            />
+                                        </div>
+
+                                        {/* Live Transcript Area */}
+                                        <div
+                                            ref={scrollRef}
+                                            className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar scroll-smooth pt-16 relative z-10"
+                                        >
+                                            {messages.map((msg) => (
+                                                <motion.div
+                                                    key={msg.id}
+                                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                >
+                                                    <div className={`
+                                                    max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13.5px] font-medium leading-[1.4] shadow-2xl
+                                                    ${msg.role === 'user'
+                                                            ? 'bg-[#1E1E1E] text-white rounded-br-none border border-white/5'
+                                                            : 'bg-white/5 text-slate-100 rounded-bl-none border border-white/10 backdrop-blur-xl'}
+                                                `}>
+                                                        {msg.content}
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                            {agentState === 'thinking' && (
+                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+                                                    <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-none border border-white/5 flex gap-1">
+                                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </div>
+
+                                        {/* Controls */}
+                                        <div className="p-6 bg-black/80 backdrop-blur-[30px] border-t border-white/5 relative z-20 pb-10">
+                                            <div className="flex gap-2 items-center">
+                                                <div className="flex-1 relative">
+                                                    <input
+                                                        type="text"
+                                                        value={inputText}
+                                                        onChange={(e) => setInputText(e.target.value)}
+                                                        onKeyPress={handleKeyPress}
+                                                        placeholder="Message Emma..."
+                                                        className="w-full bg-white/[0.03] border border-white/10 rounded-[20px] px-5 py-3.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20 placeholder:text-slate-600 transition-all font-medium"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={sendMessage}
+                                                    disabled={!inputText.trim() || isLoading}
+                                                    className="w-11 h-11 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 disabled:opacity-20 disabled:grayscale transition-all active:scale-95 shadow-xl shrink-0"
+                                                    aria-label="Send message"
+                                                >
+                                                    <Send size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={endCall}
+                                                    className="w-11 h-11 flex items-center justify-center bg-[#FF3B30] text-white rounded-full hover:scale-105 transition-all active:scale-95 shadow-xl shrink-0"
+                                                    aria-label="End call"
+                                                >
+                                                    <PhoneOff size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {callState === 'ended' && (
+                                    <motion.div
+                                        className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6"
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                    >
+                                        <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center border border-white/10">
+                                            <CheckCircle2 size={32} className="text-green-500" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white mb-2">Demo Completed</h3>
+                                            <p className="text-slate-300 font-medium mb-4">
+                                                {mode === 'sales'
+                                                    ? 'Emma has collected the necessary details. Your agent is ready for a real sales call.'
+                                                    : 'Support session resolved. The agent successfully de-escalated and provided a solution.'}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col gap-2 w-full">
+                                            <button onClick={resetCall} className="btn-primary w-full py-4 rounded-xl">
+                                                {mode === 'sales' ? 'Book a Product Strategy Call' : 'Explore Support Automation'}
                                             </button>
-                                            <button
-                                                onClick={endCall}
-                                                className="p-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors"
-                                                aria-label="End call"
-                                            >
-                                                <PhoneOff size={20} />
+                                            <button onClick={resetCall} className="text-slate-400 text-sm hover:text-white transition-colors">
+                                                Start New Call
                                             </button>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {callState === 'ended' && (
-                                <motion.div
-                                    className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6"
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                >
-                                    <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center border border-white/10">
-                                        <CheckCircle2 size={32} className="text-green-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white mb-2">Demo Completed</h3>
-                                        <p className="text-slate-300 font-medium mb-4">
-                                            {mode === 'sales'
-                                                ? 'Emma has collected the necessary details. Your agent is ready for a real sales call.'
-                                                : 'Support session resolved. The agent successfully de-escalated and provided a solution.'}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-2 w-full">
-                                        <button onClick={resetCall} className="btn-primary w-full py-4 rounded-xl">
-                                            {mode === 'sales' ? 'Book a Product Strategy Call' : 'Explore Support Automation'}
-                                        </button>
-                                        <button onClick={resetCall} className="text-slate-400 text-sm hover:text-white transition-colors">
-                                            Start New Call
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div> {/* Main Content Area */}
+                    </div> {/* Interior Screen Boundary */}
+                </div> {/* Phone Body Shell */}
+            </div> {/* Phone Interface Wrapper */}
 
             {/* STATS & CONTEXT SIDEBAR */}
             <div className={`
@@ -496,33 +615,33 @@ export default function PhoneCallUI({
                 p-6 lg:p-0 transition-all duration-300
             `}>
                 <div className="flex lg:hidden items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold">Session Intelligence</h2>
+                    <h2 className="text-xl font-bold font-display">Session Intelligence</h2>
                     <button onClick={() => setShowMobileStats(false)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
                         <X size={24} className="text-slate-400" />
                     </button>
                 </div>
 
                 {/* Agent Card */}
-                <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="bg-slate-900/40 border border-white/10 rounded-3xl p-5 backdrop-blur-xl shadow-2xl">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold border border-blue-500/30">
+                        <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold border border-blue-500/30">
                             AI
                         </div>
                         <div>
-                            <h2 className="font-bold text-sm text-white">
-                                {mode === 'sales' ? 'Sales Agent' : 'Support Agent'}
+                            <h2 className="font-bold text-sm text-white uppercase tracking-widest">
+                                {mode === 'sales' ? 'Sales Intelligence' : 'Support Intelligence'}
                             </h2>
-                            <p className="text-xs text-slate-300 font-medium">Running on Llama 3 70B</p>
+                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">NPU Powered</p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                        <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-                            <div className="text-slate-300 mb-1">Latency</div>
-                            <div className="text-green-400 font-mono">{stats.latency}</div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white/[0.03] p-3 rounded-2xl border border-white/5">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Latency</div>
+                            <div className="text-green-400 font-mono text-xs">{stats.latency}</div>
                         </div>
-                        <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-                            <div className="text-slate-300 mb-1">Sentiment</div>
-                            <div className={`font-mono ${stats.sentiment.toLowerCase() === 'positive' ? 'text-green-400' :
+                        <div className="bg-white/[0.03] p-3 rounded-2xl border border-white/5">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Sentiment</div>
+                            <div className={`font-mono text-xs ${stats.sentiment.toLowerCase() === 'positive' ? 'text-green-400' :
                                 stats.sentiment.toLowerCase() === 'negative' ? 'text-red-400' :
                                     'text-blue-400'
                                 }`}>
@@ -533,8 +652,8 @@ export default function PhoneCallUI({
                 </div>
 
                 {/* Qualification Tracker */}
-                <div className="flex-1 bg-slate-900/50 border border-white/10 rounded-2xl p-5 backdrop-blur-sm flex flex-col overflow-hidden">
-                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Live Context Extraction</h2>
+                <div className="flex-1 bg-slate-900/40 border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden">
+                    <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-6">Extracted Metadata</h2>
 
                     <div className="space-y-4 flex-1">
                         {(mode === 'sales' ? [
@@ -554,20 +673,24 @@ export default function PhoneCallUI({
                                 <motion.div
                                     key={item.key}
                                     initial={false}
-                                    animate={{ backgroundColor: isDone ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255, 255, 255, 0.03)' }}
-                                    className={`p-3 rounded-lg border transition-colors duration-300 ${isDone ? 'border-green-500/30' : 'border-dashed border-slate-700'}`}
+                                    animate={{ backgroundColor: isDone ? 'rgba(34, 197, 94, 0.05)' : 'transparent' }}
+                                    className={`p-4 rounded-2xl border transition-all duration-500 ${isDone ? 'border-green-500/30' : 'border-white/5 bg-white/[0.02]'}`}
                                 >
-                                    <div className="flex items-center justify-between mb-1">
-                                        <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
-                                            <span>{item.icon}</span> {item.label}
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <div className="flex items-center gap-2.5 text-xs font-bold text-slate-300">
+                                            <span className="opacity-50 grayscale">{item.icon}</span> {item.label}
                                         </div>
-                                        {isDone && <CheckCircle2 size={14} className="text-green-500" />}
+                                        {isDone && (
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                                <CheckCircle2 size={14} className="text-green-500" />
+                                            </motion.div>
+                                        )}
                                     </div>
-                                    <div className="text-xs pl-6 h-4">
+                                    <div className="text-[11px] pl-7">
                                         {isDone ? (
-                                            <span className="text-green-400 font-medium capitalize">{val}</span>
+                                            <span className="text-white font-medium capitalize">{val}</span>
                                         ) : (
-                                            <span className="text-slate-600 italic">Analyzing intent...</span>
+                                            <span className="text-slate-600 italic">Listening...</span>
                                         )}
                                     </div>
                                 </motion.div>
@@ -577,16 +700,16 @@ export default function PhoneCallUI({
 
                     {qualificationComplete && (
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="mt-4 p-3 bg-green-500/20 border border-green-500/50 rounded-xl flex items-center gap-3"
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-2xl flex items-center gap-4"
                         >
-                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
-                                <CheckCircle2 size={16} className="text-black" />
+                            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                                <CheckCircle2 size={18} className="text-black" />
                             </div>
                             <div>
-                                <div className="text-sm font-bold text-green-400">Lead Qualified</div>
-                                <div className="text-xs text-green-300/70">Ready for handoff</div>
+                                <div className="text-xs font-black text-green-400 uppercase tracking-widest">Metadata Sync</div>
+                                <div className="text-[11px] text-green-300/50">Qualification Pipeline Complete</div>
                             </div>
                         </motion.div>
                     )}

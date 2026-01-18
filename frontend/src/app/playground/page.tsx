@@ -151,9 +151,18 @@ export default function PlaygroundPage() {
 
                         {/* Presets Grid */}
                         <div className="glass-premium p-6 rounded-3xl space-y-4">
-                            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                <Wand2 size={16} /> Persona Configuration
-                            </h2>
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                    <Wand2 size={16} /> Persona Configuration
+                                </h2>
+                                <button
+                                    onClick={handleRestart}
+                                    className="p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5"
+                                    title="Restart Session"
+                                >
+                                    <RefreshCw size={14} />
+                                </button>
+                            </div>
                             <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                                 {filteredPresets.map((preset, i) => (
                                     <button
@@ -197,19 +206,10 @@ export default function PlaygroundPage() {
                     {/* Preview Column */}
                     <div className="lg:col-span-8">
                         <div className="relative">
-                            {/* Toolbar */}
-                            <div className="absolute top-0 right-0 z-20 p-4 sm:p-6 flex gap-3">
-                                <button
-                                    onClick={handleRestart}
-                                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-bold rounded-lg border border-white/10 flex items-center gap-2 transition-all shadow-lg active:scale-95 backdrop-blur-md"
-                                >
-                                    <RefreshCw size={12} className="sm:w-[14px] sm:h-[14px]" /> <span className="hidden sm:inline">Restart Session</span><span className="sm:hidden">Restart</span>
-                                </button>
-                            </div>
 
                             {/* Phone Rendering */}
                             <div className="glass-premium p-0.5 sm:p-1 rounded-[2rem] sm:rounded-[2.5rem] bg-slate-900/80 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl">
-                                <div className="rounded-[1.8rem] sm:rounded-[2rem] overflow-hidden bg-[#020617] border border-white/5 min-h-[500px] sm:min-h-[600px] relative">
+                                <div className="rounded-[1.8rem] sm:rounded-[2rem] overflow-hidden bg-black border border-white/5 min-h-[500px] sm:min-h-[600px] relative">
                                     <PhoneCallUI
                                         key={phoneKey}
                                         initialPrompt={systemPrompt}
