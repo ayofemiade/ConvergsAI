@@ -42,6 +42,8 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
     const [isLoading, setIsLoading] = useState(false);
     const [qualification, setQualification] = useState<any>({});
     const [qualificationComplete, setQualificationComplete] = useState(false);
+    const [liveTranscript, setLiveTranscript] = useState<{ text: string; role: 'user' | 'assistant' } | null>(null);
+    const liveTranscriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const roomRef = useRef<Room | null>(null);
     const audioRElementRef = useRef<HTMLAudioElement | null>(null);
@@ -107,13 +109,29 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                 try {
                     const data = JSON.parse(str);
                     if (data.type === 'transcript' || data.type === 'text') {
-                        const newMsg: Message = {
-                            id: uuidv4(),
-                            role: data.role || 'assistant',
-                            content: data.content || data.text,
-                            timestamp: new Date(),
-                        };
-                        setMessages(prev => [...prev, newMsg]);
+                        const isFinal = data.is_final !== false; // Assume final if not specified
+
+                        if (isFinal) {
+                            const newMsg: Message = {
+                                id: uuidv4(),
+                                role: data.role || 'assistant',
+                                content: data.content || data.text,
+                                timestamp: new Date(),
+                            };
+                            setMessages(prev => [...prev, newMsg]);
+                            setLiveTranscript(null);
+                        } else {
+                            setLiveTranscript({
+                                text: data.content || data.text,
+                                role: data.role || 'assistant'
+                            });
+
+                            // Clear live transcript after a delay if no new updates
+                            if (liveTranscriptTimeoutRef.current) clearTimeout(liveTranscriptTimeoutRef.current);
+                            liveTranscriptTimeoutRef.current = setTimeout(() => {
+                                setLiveTranscript(null);
+                            }, 3000);
+                        }
                     }
                     if (data.qualification) setQualification(data.qualification);
                     if (data.qualification_complete !== undefined) setQualificationComplete(data.qualification_complete);
@@ -298,9 +316,37 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
 
                             {callState === 'connected' && (
                                 <motion.div
-                                    className="flex-1 flex flex-col h-full"
+                                    className="flex-1 flex flex-col h-full relative"
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                 >
+                                    {/* Real-time Transcription Overlay */}
+                                    <AnimatePresence>
+                                        {liveTranscript && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0 }}
+                                                className="absolute bottom-24 left-4 right-4 z-30 pointer-events-none"
+                                            >
+                                                <div className={`
+                                                    p-4 rounded-2xl backdrop-blur-md border shadow-xl max-w-[90%] mx-auto
+                                                    ${liveTranscript.role === 'user'
+                                                        ? 'bg-blue-600/80 border-blue-400/30'
+                                                        : 'bg-slate-800/80 border-white/10'}
+                                                `}>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        {liveTranscript.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                                                            {liveTranscript.role === 'user' ? 'You' : 'Emma'} is speaking...
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm font-medium leading-relaxed italic">
+                                                        "{liveTranscript.text}"
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                     {/* Live Transcript Area */}
                                     <div
                                         ref={scrollRef}

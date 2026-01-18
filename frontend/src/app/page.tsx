@@ -293,31 +293,31 @@ export default function LandingPage() {
                             New: Multi-Mode Voice Engine
                         </div>
 
-                        <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold leading-[1.0] tracking-[-0.03em] max-w-4xl mx-auto">
-                            <span className="hero-title-primary block">Cut SDR Costs by 50%</span>
-                            <span className="text-gradient-brand hero-title-secondary block mt-2 text-3xl sm:text-5xl lg:text-[4rem]">
-                                While Scaling Your Pipeline — Automatically
+                        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] tracking-[-0.03em] max-w-4xl mx-auto">
+                            <span className="hero-title-primary block">AI Voice Agent for Sales & Support</span>
+                            <span className="text-gradient-brand hero-title-secondary block mt-6 text-xl sm:text-2xl lg:text-4xl font-semibold leading-snug">
+                                Automate Calls, Close Deals, and Delight Customers
                             </span>
                         </h1>
 
-                        <p className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-xl mx-auto font-medium hero-title-secondary" style={{ animationDelay: '0.6s' }}>
-                            ConvergsAI qualifies inbound leads and books real meetings with human-like voice intelligence.
+                        <p className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium hero-title-secondary" style={{ animationDelay: '0.6s' }}>
+                            Real-sounding AI voice, seamless CRM integration, and intelligent routing for both revenue and support teams — all in one platform.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full pt-4 hero-title-secondary" style={{ animationDelay: '0.8s' }}>
                             <button
                                 onClick={() => user ? window.scrollTo({ top: 1000, behavior: 'smooth' }) : openAuthModal()}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold py-4 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_-10px_rgba(79,70,229,0.6)] hover:scale-105 transition-all duration-300 group flex items-center gap-2"
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold py-4 px-10 rounded-full shadow-[0_0_40px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_-10px_rgba(79,70,229,0.6)] hover:scale-105 transition-all duration-300 group flex items-center gap-2"
                             >
                                 {user ? 'View Dashboard' : 'Book a Demo'}
                                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                             </button>
-                            <button className="glass px-8 py-4 rounded-full text-lg font-medium hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2">
+                            <button className="glass px-10 py-4 rounded-full text-lg font-medium hover:bg-white/10 transition-all border border-white/10 flex items-center gap-2 group">
                                 <span className="relative flex h-3 w-3">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
                                 </span>
-                                Watch Product Tour
+                                See ConvergsAI in Action <span className="text-slate-500 text-sm group-hover:text-slate-300 transition-colors">(90s)</span>
                             </button>
                         </div>
 
@@ -470,20 +470,20 @@ export default function LandingPage() {
                             {[
                                 {
                                     step: "01",
-                                    title: "Sync Your Pipeline",
-                                    desc: "Connect ConvergsAI to your CRM and training docs in under 5 minutes.",
+                                    title: "Connect CRM",
+                                    desc: "One-click integration with HubSpot, Salesforce, or Zendesk. We sync your pipeline and support tickets in under 5 minutes.",
                                     icon: <LinkIcon className="text-blue-400" size={24} />
                                 },
                                 {
                                     step: "02",
-                                    title: "Define Your Hunter",
-                                    desc: "Tell the AI exactly what 'Qualified' looks like for your business.",
+                                    title: "Train Your AI",
+                                    desc: "Define your ideal customer profile, qualification rules, and support documentation. Emma learns your business nuance instantly.",
                                     icon: <Settings className="text-indigo-400" size={24} />
                                 },
                                 {
                                     step: "03",
-                                    title: "Scale Real Meetings",
-                                    desc: "Deploy your agent to handle inbound speed-to-lead and outbound booking.",
+                                    title: "Start Automation",
+                                    desc: "Deploy your agent to handle inbound speed-to-lead and outbound booking while you sleep. Scale without adding headcount.",
                                     icon: <Zap className="text-purple-400" size={24} />
                                 }
                             ].map((step, i) => (
