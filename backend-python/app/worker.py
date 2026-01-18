@@ -61,7 +61,7 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         stt="deepgram/nova-3",
         # worker.py acts only as an orchestrator. SalesAgent acts as the brain.
-        llm=SalesLLM(session_id),
+        llm=SalesLLM(session_id, ctx.room),
         tts="cartesia/sonic-2:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
@@ -83,6 +83,28 @@ async def entrypoint(ctx: JobContext):
         logger.info(f"Usage: {summary}")
 
     ctx.add_shutdown_callback(log_usage)
+
+    # Listen for metadata from frontend
+    @ctx.room.on("data_received")
+    def on_data_received(data: room_io.DataPacket):
+        try:
+            import json
+            from app.agent import memory
+            
+            payload = json.loads(data.data.decode())
+            if payload.get("type") == "metadata":
+                m_id = session_id
+                mode = payload.get("mode")
+                persona = payload.get("persona")
+                prompt = payload.get("prompt")
+                
+                if mode: memory.session_memory.set_metadata(m_id, "mode_type", mode)
+                if persona: memory.session_memory.set_metadata(m_id, "persona_name", persona)
+                if prompt: memory.session_memory.set_metadata(m_id, "custom_prompt", prompt)
+                
+                logger.info(f"[Worker] Metadata updated for {m_id}: mode={mode}, persona={persona}")
+        except Exception as e:
+            logger.error(f"[Worker] Error parsing data packet: {e}")
 
     await session.start(
         agent=MyAgent(),

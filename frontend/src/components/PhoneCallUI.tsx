@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneOff, Send, User, Bot, Loader2, Sparkles, Mic, Volume2, CheckCircle2 } from 'lucide-react';
+import { Phone, PhoneOff, Send, User, Bot, Loader2, Sparkles, Mic, Volume2, CheckCircle2, X, ChevronRight } from 'lucide-react';
 import { apiClient, MessageResponse } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -30,9 +30,16 @@ interface Message {
 interface PhoneCallUIProps {
     initialPrompt?: string;
     onCallStart?: () => void;
+    mode?: 'sales' | 'support';
+    persona?: string;
 }
 
-export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIProps = {}) {
+export default function PhoneCallUI({
+    initialPrompt,
+    onCallStart,
+    mode = 'sales',
+    persona = 'Emma'
+}: PhoneCallUIProps = {}) {
     // State
     const [callState, setCallState] = useState<CallState>('idle');
     const [agentState, setAgentState] = useState<AgentState>('idle');
@@ -43,8 +50,10 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
     const [qualification, setQualification] = useState<any>({});
     const [qualificationComplete, setQualificationComplete] = useState(false);
     const [liveTranscript, setLiveTranscript] = useState<{ text: string; role: 'user' | 'assistant' } | null>(null);
+    const [stats, setStats] = useState({ latency: '---', sentiment: 'Neutral' });
     const liveTranscriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [showMobileStats, setShowMobileStats] = useState(false);
     const roomRef = useRef<Room | null>(null);
     const audioRElementRef = useRef<HTMLAudioElement | null>(null);
 
@@ -135,6 +144,14 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                     }
                     if (data.qualification) setQualification(data.qualification);
                     if (data.qualification_complete !== undefined) setQualificationComplete(data.qualification_complete);
+
+                    // Handle intelligence updates
+                    if (data.intelligence) {
+                        setStats(prev => ({
+                            latency: data.intelligence.latency ? `${data.intelligence.latency}ms` : prev.latency,
+                            sentiment: data.intelligence.sentiment || prev.sentiment
+                        }));
+                    }
                 } catch (e) {
                     console.error('DEBUG: Failed to parse data message:', str);
                 }
@@ -154,6 +171,17 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
             setCallState('connected');
             setAgentState('listening');
 
+            // 4. Send initial metadata packet
+            const encoder = new TextEncoder();
+            const metaPacket = encoder.encode(JSON.stringify({
+                type: 'metadata',
+                mode,
+                persona,
+                prompt: initialPrompt
+            }));
+            await room.localParticipant.publishData(metaPacket, { reliable: true });
+            console.log("DEBUG: Sent initial metadata packet:", { mode, persona });
+
         } catch (error) {
             console.error('DEBUG CRITICAL: LiveKit startCall failed:', error);
             alert(`Call failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -171,13 +199,17 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
     const endCall = () => {
         cleanup();
         setCallState('ended');
-        setTimeout(() => {
-            setCallState('idle');
-            setMessages([]);
-            setQualification({});
-            setQualificationComplete(false);
-            setAgentState('idle');
-        }, 2000);
+    };
+
+    const resetCall = () => {
+        setCallState('idle');
+        setMessages([]);
+        setQualification({});
+        setQualificationComplete(false);
+        setAgentState('idle');
+        setStats({ latency: '---', sentiment: 'Neutral' });
+        setLiveTranscript(null);
+        setInputText('');
     };
 
     // Keep memory of cleanup on unmount
@@ -224,7 +256,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
     };
 
     return (
-        <div className="w-full h-full flex flex-col md:flex-row gap-6 p-1">
+        <div className="w-full h-full flex flex-col lg:flex-row gap-4 lg:gap-6 p-1">
 
             {/* PHONE INTERFACE */}
             <div className="flex-1 relative group">
@@ -234,30 +266,43 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                 <div className="relative h-full bg-slate-950 rounded-[2rem] border-[6px] border-slate-800 shadow-2xl overflow-hidden flex flex-col">
 
                     {/* Dynamic Status Bar (Notch) */}
-                    <div className="h-14 bg-slate-900 flex items-center justify-center relative z-20 border-b border-white/5">
+                    <div className="h-12 sm:h-14 bg-slate-900 flex items-center justify-center relative z-20 border-b border-white/5 px-4">
+                        <div className="flex-1 lg:hidden">
+                            {callState === 'connected' && (
+                                <button
+                                    onClick={() => setShowMobileStats(!showMobileStats)}
+                                    className="p-2 text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <Sparkles size={18} />
+                                </button>
+                            )}
+                        </div>
+
                         <motion.div
                             animate={{
-                                width: agentState === 'speaking' ? '180px' : '120px',
+                                width: agentState === 'speaking' ? '160px' : '100px',
                                 backgroundColor: agentState === 'speaking' ? '#22c55e' :
                                     agentState === 'thinking' ? '#a855f7' : '#334155'
                             }}
-                            className="h-8 rounded-full flex items-center justify-center gap-2 overflow-hidden transition-colors duration-500"
+                            className="h-7 sm:h-8 rounded-full flex items-center justify-center gap-1.5 sm:gap-2 overflow-hidden transition-colors duration-500 mx-auto"
                         >
                             {callState === 'connected' ? (
                                 <>
-                                    {agentState === 'speaking' && <Volume2 size={14} className="text-black animate-pulse" />}
-                                    {agentState === 'thinking' && <Sparkles size={14} className="text-white animate-spin" />}
-                                    {agentState === 'listening' && <Mic size={14} className="text-white" />}
+                                    {agentState === 'speaking' && <Volume2 size={12} className="text-black animate-pulse" />}
+                                    {agentState === 'thinking' && <Sparkles size={12} className="text-white animate-spin" />}
+                                    {agentState === 'listening' && <Mic size={12} className="text-white" />}
 
-                                    <span className={`text-xs font-bold ${agentState === 'speaking' ? 'text-black' : 'text-white'}`}>
+                                    <span className={`text-[10px] sm:text-xs font-bold ${agentState === 'speaking' ? 'text-black' : 'text-white'}`}>
                                         {agentState === 'speaking' ? 'Emma Speaking' :
                                             agentState === 'thinking' ? 'AI Thinking' : 'Listening'}
                                     </span>
                                 </>
                             ) : (
-                                <span className="text-xs font-medium text-slate-300">ConvergsAI Agent</span>
+                                <span className="text-[10px] sm:text-xs font-medium text-slate-300">ConvergsAI Agent</span>
                             )}
                         </motion.div>
+
+                        <div className="flex-1 lg:hidden" />
                     </div>
 
                     {/* Main Content Area */}
@@ -360,7 +405,7 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                             >
                                                 <div className={`
-                                                    max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm
+                                                    max-w-[88%] sm:max-w-[85%] px-3 py-2 sm:px-4 sm:py-3 rounded-2xl text-[13px] sm:text-sm leading-relaxed shadow-sm
                                                     ${msg.role === 'user'
                                                         ? 'bg-blue-600 text-white rounded-br-none'
                                                         : 'bg-slate-800 text-slate-100 rounded-bl-none border border-white/5'}
@@ -421,11 +466,20 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-white mb-2">Demo Completed</h3>
-                                        <p className="text-slate-300 font-medium">Emma has qualified this lead.</p>
+                                        <p className="text-slate-300 font-medium mb-4">
+                                            {mode === 'sales'
+                                                ? 'Emma has collected the necessary details. Your agent is ready for a real sales call.'
+                                                : 'Support session resolved. The agent successfully de-escalated and provided a solution.'}
+                                        </p>
                                     </div>
-                                    <button onClick={() => setCallState('idle')} className="btn-secondary w-full">
-                                        Start New Call
-                                    </button>
+                                    <div className="flex flex-col gap-2 w-full">
+                                        <button onClick={resetCall} className="btn-primary w-full py-4 rounded-xl">
+                                            {mode === 'sales' ? 'Book a Product Strategy Call' : 'Explore Support Automation'}
+                                        </button>
+                                        <button onClick={resetCall} className="text-slate-400 text-sm hover:text-white transition-colors">
+                                            Start New Call
+                                        </button>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -434,7 +488,20 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
             </div>
 
             {/* STATS & CONTEXT SIDEBAR */}
-            <div className="hidden md:flex w-80 flex-col gap-4">
+            <div className={`
+                ${showMobileStats ? 'flex' : 'hidden'} 
+                lg:flex lg:w-80 flex-col gap-4 
+                fixed lg:relative inset-0 lg:inset-auto z-[100] lg:z-10
+                bg-slate-950/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none
+                p-6 lg:p-0 transition-all duration-300
+            `}>
+                <div className="flex lg:hidden items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold">Session Intelligence</h2>
+                    <button onClick={() => setShowMobileStats(false)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                        <X size={24} className="text-slate-400" />
+                    </button>
+                </div>
+
                 {/* Agent Card */}
                 <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-4">
@@ -442,18 +509,25 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                             AI
                         </div>
                         <div>
-                            <h2 className="font-bold text-sm text-white">Qualification Agent</h2>
+                            <h2 className="font-bold text-sm text-white">
+                                {mode === 'sales' ? 'Sales Agent' : 'Support Agent'}
+                            </h2>
                             <p className="text-xs text-slate-300 font-medium">Running on Llama 3 70B</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-center text-xs">
                         <div className="bg-white/5 p-2 rounded-lg border border-white/5">
                             <div className="text-slate-300 mb-1">Latency</div>
-                            <div className="text-green-400 font-mono">120ms</div>
+                            <div className="text-green-400 font-mono">{stats.latency}</div>
                         </div>
                         <div className="bg-white/5 p-2 rounded-lg border border-white/5">
                             <div className="text-slate-300 mb-1">Sentiment</div>
-                            <div className="text-blue-400 font-mono">Positive</div>
+                            <div className={`font-mono ${stats.sentiment.toLowerCase() === 'positive' ? 'text-green-400' :
+                                stats.sentiment.toLowerCase() === 'negative' ? 'text-red-400' :
+                                    'text-blue-400'
+                                }`}>
+                                {stats.sentiment}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -463,12 +537,17 @@ export default function PhoneCallUI({ initialPrompt, onCallStart }: PhoneCallUIP
                     <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Live Context Extraction</h2>
 
                     <div className="space-y-4 flex-1">
-                        {[
+                        {(mode === 'sales' ? [
                             { key: 'business_type', label: 'Business Type', icon: '🏢' },
                             { key: 'goal', label: 'Primary Goal', icon: '🎯' },
                             { key: 'urgency', label: 'Timeline', icon: '⏱️' },
                             { key: 'budget_readiness', label: 'Budget Status', icon: '💰' },
-                        ].map((item) => {
+                        ] : [
+                            { key: 'issue_type', label: 'Issue Type', icon: '⚠️' },
+                            { key: 'account_status', label: 'Account Status', icon: '👤' },
+                            { key: 'frustration_level', label: 'Emotion', icon: '🔥' },
+                            { key: 'resolution_path', label: 'Resolution', icon: '✅' },
+                        ]).map((item) => {
                             const val = qualification[item.key];
                             const isDone = !!val;
                             return (

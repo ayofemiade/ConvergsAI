@@ -4,9 +4,10 @@ from app.agent.sales_agent import sales_agent
 from app.logger_config import logger
 
 class SalesLLM(llm.LLM):
-    def __init__(self, session_id: str):
+    def __init__(self, session_id: str, room: Optional[Any] = None):
         super().__init__()
         self.session_id = session_id
+        self.room = room
         self.last_transcript = None # Track to avoid Turn Redundancy
 
     def chat(
@@ -35,6 +36,7 @@ class SalesLLMStream(llm.LLMStream):
     ):
         super().__init__(llm, chat_ctx=chat_ctx, tools=tools, conn_options=conn_options)
         self.session_id = llm.session_id
+        self.room = llm.room
         # chat_ctx is already available via self._chat_ctx from the base class property
 
     async def _run(self) -> None:
@@ -190,6 +192,39 @@ class SalesLLMStream(llm.LLMStream):
                         delta=llm.ChoiceDelta(role="assistant", content=chunk_buffer)
                     )
                 )
+
+            # [INTELLIGENCE BROADCAST]
+            # After the stream is done, we broadcast the latest analysis to the room
+            try:
+                import json
+                from app.agent import memory
+                
+                analysis = memory.session_memory.get_metadata(session_id, "last_analysis")
+                if analysis and self.room:
+                    # Calculate simple latency (mocked or estimated for now)
+                    import asyncio
+                    latency = int((asyncio.get_event_loop().time() - start_time) * 1000)
+                    
+                    intel_packet = {
+                        "type": "intelligence",
+                        "intelligence": {
+                            "latency": latency,
+                            "sentiment": analysis.get("sentiment", "Neutral")
+                        },
+                        "qualification": analysis.get("extracted_info", {}),
+                        "qualification_complete": analysis.get("recommended_action") == "advance"
+                    }
+                    
+                    # Also include the full assistant response to ensure Frontend has the text
+                    # (Transcripts are usually handled by AgentSession, but this is a safety backup)
+                    
+                    await self.room.local_participant.publish_data(
+                        json.dumps(intel_packet),
+                        reliable=True
+                    )
+                    logger.info(f"[SalesLLM] Broadcast intelligence: {analysis.get('sentiment')}")
+            except Exception as e:
+                logger.error(f"[SalesLLM] Failed to broadcast intelligence: {e}")
 
         except Exception as e:
             logger.error(f"[SalesLLM] Error in streaming response: {e}", exc_info=True)

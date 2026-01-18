@@ -39,7 +39,12 @@ class SalesAgent(BaseAgent):
         Applies guardrails, semantic locks, pricing gates, and nudges.
         """
         # ---------- Metadata ----------
-        mode = memory.session_memory.get_metadata(session_id, "mode")
+        from app.agent.prompts import SUPPORT_MODE_MODIFIER
+        
+        mode_type = memory.session_memory.get_metadata(session_id, "mode_type") or "sales"
+        persona_name = memory.session_memory.get_metadata(session_id, "persona_name") or "Emma"
+        custom_prompt = memory.session_memory.get_metadata(session_id, "custom_prompt")
+        
         current_stage = memory.session_memory.get_metadata(session_id, "stage")
         value_presented = memory.session_memory.get_metadata(session_id, PRICING_GATE_METADATA_KEY) or False
         is_locked = memory.session_memory.get_metadata(session_id, SESSION_END_KEY) or False
@@ -67,7 +72,18 @@ class SalesAgent(BaseAgent):
         context_summary = f"\n[USER CONTEXT]\n- Role: {role or 'Unknown'}\n- Company: {company or 'Unknown'}\n- Identified Pain Points: {pain_points or 'None yet'}"
         
         # ---------- Prompt Generation ----------
-        system_prompt = DETERMINISTIC_SYSTEM_PROMPT + "\n" + BASE_AGENT_PROMPT + context_summary
+        # Adjust Persona Identity
+        base_persona = BASE_AGENT_PROMPT.replace("senior human sales and customer support professional", f"senior professional named {persona_name}")
+        
+        system_prompt = DETERMINISTIC_SYSTEM_PROMPT + "\n" + base_persona + context_summary
+        
+        # Add mode-specific behavior
+        if mode_type == "support":
+            system_prompt += "\n" + SUPPORT_MODE_MODIFIER
+        
+        # Add custom instructions if provided
+        if custom_prompt:
+            system_prompt += f"\n\n[PERSONA INSTRUCTIONS]\n{custom_prompt}"
         
         # Add stage-specific precision
         stage_instruction = STAGE_PROMPTS.get(current_stage, "")
@@ -95,7 +111,6 @@ class SalesAgent(BaseAgent):
 
         system_prompt += f"\n\n{VOICE_CONVERSATION_WRAPPER}"
 
-        
         return system_prompt, current_stage
 
     def update_memory(self, session_id: str, role: str, content: str):
@@ -338,6 +353,9 @@ class SalesAgent(BaseAgent):
 
         # 8. Advance Stage logic
         self.advance_logic(session_id, final_stage, analysis)
+        
+        # 9. Store analysis for SalesLLM to broadcast
+        memory.session_memory.set_metadata(session_id, "last_analysis", analysis)
         
         logger.info(f"[SalesAgent] Combined Call Complete - New Stage: {memory.session_memory.get_metadata(session_id, 'stage')}")
 
