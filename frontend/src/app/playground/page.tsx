@@ -94,9 +94,9 @@ export default function PlaygroundPage() {
         <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30">
             <BackgroundAmbience />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
                 {/* Header */}
-                <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8 sm:mb-12">
+                <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-12">
                     <div className="flex items-center gap-4">
                         <Link href="/" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5">
                             <ArrowLeft size={18} />
@@ -181,10 +181,10 @@ export default function PlaygroundPage() {
                                             : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
                                             }`}
                                     >
-                                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-black/20 flex items-center justify-center shrink-0">
+                                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-black/20 flex items-center justify-center shrink-0">
                                             {preset.icon}
                                         </div>
-                                        <span className="font-medium text-[11px] sm:text-sm text-center sm:text-left truncate w-full">{preset.name}</span>
+                                        <span className="font-medium text-[10px] sm:text-sm text-center sm:text-left truncate w-full">{preset.name}</span>
                                         {activePreset === i && <Zap size={12} className="hidden sm:block ml-auto text-blue-400 fill-blue-400/20" />}
                                     </button>
                                 ))}
