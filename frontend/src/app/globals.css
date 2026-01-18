@@ -113,16 +113,16 @@ h6 {
     radial-gradient(1px 1px at 90px 40px, #fff, rgba(0, 0, 0, 0)),
     radial-gradient(1px 1px at 130px 80px, #fff, rgba(0, 0, 0, 0));
   background-size: 200px 200px;
-  animation: stars-move 100s linear infinite;
-  will-change: transform;
+  animation: stars 100s linear infinite;
 }
 
-@keyframes stars-move {
+@keyframes stars {
   from {
-    transform: translateY(0);
+    background-position: 0 0;
   }
+
   to {
-    transform: translateY(-200px);
+    background-position: 0 1000px;
   }
 }
 
