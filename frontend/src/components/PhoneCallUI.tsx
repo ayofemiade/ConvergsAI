@@ -667,7 +667,6 @@ export default function PhoneCallUI({
                             <h2 className="font-bold text-sm text-white uppercase tracking-widest">
                                 {mode === 'sales' ? 'Sales Intelligence' : 'Support Intelligence'}
                             </h2>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">NPU Powered</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
