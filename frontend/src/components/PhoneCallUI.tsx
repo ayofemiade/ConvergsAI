@@ -34,6 +34,101 @@ interface PhoneCallUIProps {
     persona?: string;
 }
 
+// --- OPTIMIZED SUB-COMPONENTS ---
+
+const BackgroundAura = React.memo(() => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+            animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.07, 0.12, 0.07],
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500 blur-[80px] rounded-full will-change-transform"
+        />
+        <motion.div
+            animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.04, 0.08, 0.04],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear", delay: 2 }}
+            className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500 blur-[60px] rounded-full will-change-transform"
+        />
+    </div>
+));
+BackgroundAura.displayName = 'BackgroundAura';
+
+const StatusStatusBar = React.memo(() => (
+    <div className="h-14 flex items-center justify-between px-10 z-40 text-white/95 relative">
+        {/* Time - Hidden on small screens */}
+        <span className="hidden lg:flex text-[12px] font-black tracking-tighter items-center gap-1.5">
+            9:41
+            <motion.div
+                animate={{ opacity: [1, 0, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-1.5 h-1.5 rounded-full bg-blue-500"
+            />
+        </span>
+
+        {/* Dynamic Island sibling space (centered) */}
+        <div className="flex-1" />
+
+        {/* Battery/Signal - Hidden on small screens */}
+        <div className="hidden lg:flex items-center gap-2.5 opacity-70">
+            <SignalHigh size={14} strokeWidth={2.5} />
+            <Wifi size={14} strokeWidth={2.5} />
+            <div className="flex items-center gap-1">
+                <div className="w-[22px] h-[11px] rounded-[3.5px] border border-white/30 p-[1.5px] flex items-center relative">
+                    <div className="h-full w-[88%] bg-white rounded-[1.5px]" />
+                </div>
+                <div className="w-[2px] h-[4px] bg-white/30 rounded-r-full" />
+            </div>
+        </div>
+    </div>
+));
+StatusStatusBar.displayName = 'StatusStatusBar';
+
+const MessageBubble = React.memo(({ msg }: { msg: Message }) => (
+    <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+        <div className={`
+            max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13.5px] font-medium leading-[1.4]
+            ${msg.role === 'user'
+                ? 'bg-[#1E1E1E] text-white rounded-br-none border border-white/5'
+                : 'bg-white/5 text-slate-100 rounded-bl-none border border-white/10 backdrop-blur-md'}
+        `}>
+            {msg.content}
+        </div>
+    </div>
+));
+MessageBubble.displayName = 'MessageBubble';
+
+const QualificationItem = React.memo(({ item, val, isDone }: { item: any; val: any; isDone: boolean }) => (
+    <motion.div
+        initial={false}
+        animate={{ backgroundColor: isDone ? 'rgba(34, 197, 94, 0.05)' : 'transparent' }}
+        className={`p-4 rounded-2xl border transition-all duration-500 ${isDone ? 'border-green-500/30' : 'border-white/5 bg-white/[0.02]'} will-change-transform`}
+    >
+        <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2.5 text-xs font-bold text-slate-300">
+                <span className="opacity-50 grayscale">{item.icon}</span> {item.label}
+            </div>
+            {isDone && (
+                <div className="text-green-500">
+                    <CheckCircle2 size={14} />
+                </div>
+            )}
+        </div>
+        <div className="text-[11px] pl-7">
+            {isDone ? (
+                <span className="text-white font-medium capitalize">{val}</span>
+            ) : (
+                <span className="text-slate-600 italic">Listening...</span>
+            )}
+        </div>
+    </motion.div>
+));
+QualificationItem.displayName = 'QualificationItem';
+
 export default function PhoneCallUI({
     initialPrompt,
     onCallStart,
@@ -57,6 +152,22 @@ export default function PhoneCallUI({
     const roomRef = useRef<Room | null>(null);
     const audioRElementRef = useRef<HTMLAudioElement | null>(null);
 
+    // Memoized state constants
+    const qualificationItems = React.useMemo(() => ({
+        sales: [
+            { key: 'business_type', label: 'Business Type', icon: '🏢' },
+            { key: 'goal', label: 'Primary Goal', icon: '🎯' },
+            { key: 'urgency', label: 'Timeline', icon: '⏱️' },
+            { key: 'budget_readiness', label: 'Budget Status', icon: '💰' },
+        ],
+        support: [
+            { key: 'issue_type', label: 'Issue Type', icon: '⚠️' },
+            { key: 'account_status', label: 'Account Status', icon: '👤' },
+            { key: 'frustration_level', label: 'Emotion', icon: '🔥' },
+            { key: 'resolution_path', label: 'Resolution', icon: '✅' },
+        ]
+    }), []);
+
     // Auto-scroll to bottom of transcript
     useEffect(() => {
         if (scrollRef.current) {
@@ -71,33 +182,26 @@ export default function PhoneCallUI({
     }, []);
 
     // Start call logic
-    const startCall = async () => {
+    const startCall = React.useCallback(async () => {
         setCallState('ringing');
         try {
             if (onCallStart) onCallStart();
 
-            // 1. Create a session to get a unique ID (used as room name)
-            console.log("DEBUG: Creating session at http://localhost:4000/api/session/new");
             const { session_id } = await apiClient.createSession(initialPrompt);
             setSessionId(session_id);
-            console.log("DEBUG: Session created:", session_id);
 
-            // 2. Fetch LiveKit token
-            console.log("DEBUG: Fetching token for room:", session_id);
             const { token, serverUrl } = await apiClient.getLiveKitToken(session_id);
-            console.log("DEBUG: Token received. serverUrl:", serverUrl);
 
-            // 3. Connect to LiveKit Room
-            console.log("DEBUG: Connecting to room...");
             const room = new Room({
                 adaptiveStream: true,
                 dynacast: true,
+                publishDefaults: {
+                    dtx: true, // Enable DTX for better bandwidth/CPU usage
+                }
             });
             roomRef.current = room;
 
-            // Handle track subscriptions
-            room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
-                console.log("DEBUG: Track discovered:", track.kind, "from:", participant.identity);
+            room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
                 if (track.kind === Track.Kind.Audio) {
                     const element = track.attach();
                     document.body.appendChild(element);
@@ -107,27 +211,23 @@ export default function PhoneCallUI({
 
             room.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
                 const isAgentSpeaking = speakers.some(p => p.identity.includes('agent') || (p as any).isAgent);
-                if (isAgentSpeaking) setAgentState('speaking');
-                else setAgentState('listening');
+                setAgentState(isAgentSpeaking ? 'speaking' : 'listening');
             });
 
-            room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
-                const decoder = new TextDecoder();
-                const str = decoder.decode(payload);
-                console.log("DEBUG: Data packet received:", str);
+            room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
+                const str = new TextDecoder().decode(payload);
                 try {
                     const data = JSON.parse(str);
                     if (data.type === 'transcript' || data.type === 'text') {
-                        const isFinal = data.is_final !== false; // Assume final if not specified
+                        const isFinal = data.is_final !== false;
 
                         if (isFinal) {
-                            const newMsg: Message = {
+                            setMessages(prev => [...prev, {
                                 id: uuidv4(),
                                 role: data.role || 'assistant',
                                 content: data.content || data.text,
                                 timestamp: new Date(),
-                            };
-                            setMessages(prev => [...prev, newMsg]);
+                            }]);
                             setLiveTranscript(null);
                         } else {
                             setLiveTranscript({
@@ -135,7 +235,6 @@ export default function PhoneCallUI({
                                 role: data.role || 'assistant'
                             });
 
-                            // Clear live transcript after a delay if no new updates
                             if (liveTranscriptTimeoutRef.current) clearTimeout(liveTranscriptTimeoutRef.current);
                             liveTranscriptTimeoutRef.current = setTimeout(() => {
                                 setLiveTranscript(null);
@@ -145,33 +244,26 @@ export default function PhoneCallUI({
                     if (data.qualification) setQualification(data.qualification);
                     if (data.qualification_complete !== undefined) setQualificationComplete(data.qualification_complete);
 
-                    // Handle intelligence updates
                     if (data.intelligence) {
                         setStats(prev => ({
                             latency: data.intelligence.latency ? `${data.intelligence.latency}ms` : prev.latency,
                             sentiment: data.intelligence.sentiment || prev.sentiment
                         }));
                     }
-                } catch (e) {
-                    console.error('DEBUG: Failed to parse data message:', str);
-                }
+                } catch (e) { }
             });
 
-            room.on(RoomEvent.Disconnected, (reason) => {
-                console.log("DEBUG: Room disconnected. Reason:", reason);
+            room.on(RoomEvent.Disconnected, () => {
                 setCallState('ended');
                 cleanup();
             });
 
             await room.connect(serverUrl, token);
-            console.log("DEBUG: Successfully joined LiveKit room!");
             await room.localParticipant.setMicrophoneEnabled(true);
-            console.log("DEBUG: Microphone access granted and enabled.");
 
             setCallState('connected');
             setAgentState('listening');
 
-            // 4. Send initial metadata packet
             const encoder = new TextEncoder();
             const metaPacket = encoder.encode(JSON.stringify({
                 type: 'metadata',
@@ -180,28 +272,26 @@ export default function PhoneCallUI({
                 prompt: initialPrompt
             }));
             await room.localParticipant.publishData(metaPacket, { reliable: true });
-            console.log("DEBUG: Sent initial metadata packet:", { mode, persona });
 
         } catch (error) {
-            console.error('DEBUG CRITICAL: LiveKit startCall failed:', error);
-            alert(`Call failed: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('LiveKit fail:', error);
             setCallState('idle');
         }
-    };
+    }, [initialPrompt, mode, persona, onCallStart]);
 
-    const cleanup = () => {
+    const cleanup = React.useCallback(() => {
         if (roomRef.current) {
             roomRef.current.disconnect();
             roomRef.current = null;
         }
-    };
+    }, []);
 
-    const endCall = () => {
+    const endCall = React.useCallback(() => {
         cleanup();
         setCallState('ended');
-    };
+    }, [cleanup]);
 
-    const resetCall = () => {
+    const resetCall = React.useCallback(() => {
         setCallState('idle');
         setMessages([]);
         setQualification({});
@@ -210,30 +300,30 @@ export default function PhoneCallUI({
         setStats({ latency: '---', sentiment: 'Neutral' });
         setLiveTranscript(null);
         setInputText('');
-    };
+    }, []);
 
     // Keep memory of cleanup on unmount
     useEffect(() => {
         return () => cleanup();
     }, []);
 
-    const sendMessage = async () => {
+    const sendMessage = React.useCallback(async () => {
         if (!inputText.trim() || !roomRef.current) return;
 
-        const userMessage: Message = {
+        const content = inputText;
+        setInputText('');
+
+        setMessages((prev) => [...prev, {
             id: uuidv4(),
             role: 'user',
-            content: inputText,
+            content,
             timestamp: new Date(),
-        };
+        }]);
 
-        setMessages((prev) => [...prev, userMessage]);
-
-        // Send via Data Channel for text-backup/chat-history support
         const encoder = new TextEncoder();
         const data = encoder.encode(JSON.stringify({
             type: 'chat',
-            content: inputText,
+            content,
             role: 'user'
         }));
 
@@ -241,19 +331,15 @@ export default function PhoneCallUI({
             await roomRef.current.localParticipant.publishData(data, {
                 reliable: true
             });
-        } catch (err) {
-            console.error("Failed to send data message:", err);
-        }
+        } catch (err) { }
+    }, [inputText]);
 
-        setInputText('');
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    const handleKeyPress = React.useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
-    };
+    }, [sendMessage]);
 
     return (
         <div className="w-full h-full flex flex-col lg:flex-row gap-4 lg:gap-6 p-1">
@@ -274,26 +360,7 @@ export default function PhoneCallUI({
                     <div className="relative flex-1 bg-black rounded-[2.8rem] overflow-hidden flex flex-col ring-1 ring-white/10 shadow-[inset_0_0_80px_rgba(0,0,0,0.9)]">
 
                         {/* MOCK STATUS BAR (iOS Style) */}
-                        <div className="h-14 flex items-center justify-between px-10 z-40 text-white/95">
-                            <span className="text-[12px] font-black tracking-tighter flex items-center gap-1.5">
-                                9:41
-                                <motion.div
-                                    animate={{ opacity: [1, 0, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="w-1.5 h-1.5 rounded-full bg-blue-500"
-                                />
-                            </span>
-                            <div className="flex items-center gap-2.5 opacity-70">
-                                <SignalHigh size={14} strokeWidth={2.5} />
-                                <Wifi size={14} strokeWidth={2.5} />
-                                <div className="flex items-center gap-1">
-                                    <div className="w-[22px] h-[11px] rounded-[3.5px] border border-white/30 p-[1.5px] flex items-center relative">
-                                        <div className="h-full w-[88%] bg-white rounded-[1.5px]" />
-                                    </div>
-                                    <div className="w-[2px] h-[4px] bg-white/30 rounded-r-full" />
-                                </div>
-                            </div>
-                        </div>
+                        <StatusStatusBar />
 
                         {/* DYNAMIC ISLAND HUB (Interactive) */}
                         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50">
@@ -306,7 +373,7 @@ export default function PhoneCallUI({
                                     height: 36,
                                 }}
                                 transition={{ type: "spring", stiffness: 450, damping: 28 }}
-                                className="bg-black border border-white/20 shadow-2xl rounded-full flex items-center justify-center gap-3 px-5 shrink-0 overflow-hidden"
+                                className="bg-black border border-white/20 shadow-2xl rounded-full flex items-center justify-center gap-3 px-5 shrink-0 overflow-hidden will-change-transform"
                             >
                                 <AnimatePresence mode="wait">
                                     {callState === 'connected' ? (
@@ -410,15 +477,13 @@ export default function PhoneCallUI({
                                         className="flex-1 flex flex-col items-center justify-between py-20 relative overflow-hidden"
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     >
-                                        {/* Animated Ringing Background */}
-                                        <div className="absolute inset-0 z-0">
+                                        <div className="absolute inset-0 z-0 pointer-events-none">
                                             <motion.div
                                                 animate={{
-                                                    scale: [1, 1.1, 1],
-                                                    opacity: [0.3, 0.4, 0.3]
+                                                    opacity: [0.15, 0.25, 0.15]
                                                 }}
                                                 transition={{ duration: 8, repeat: Infinity }}
-                                                className="absolute inset-0 bg-blue-600/20 blur-[120px]"
+                                                className="absolute inset-0 bg-blue-600/10 blur-[100px]"
                                             />
                                         </div>
 
@@ -489,47 +554,18 @@ export default function PhoneCallUI({
                                             )}
                                         </AnimatePresence>
                                         {/* Phone Screen Background Elements */}
-                                        <div className="absolute inset-0 pointer-events-none">
-                                            <motion.div
-                                                animate={{
-                                                    scale: [1, 1.2, 1],
-                                                    opacity: [0.1, 0.15, 0.1]
-                                                }}
-                                                transition={{ duration: 10, repeat: Infinity }}
-                                                className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500 blur-[100px] rounded-full"
-                                            />
-                                            <motion.div
-                                                animate={{
-                                                    scale: [1, 1.3, 1],
-                                                    opacity: [0.05, 0.1, 0.05]
-                                                }}
-                                                transition={{ duration: 15, repeat: Infinity, delay: 2 }}
-                                                className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500 blur-[80px] rounded-full"
-                                            />
-                                        </div>
+                                        <BackgroundAura />
 
                                         {/* Live Transcript Area */}
                                         <div
                                             ref={scrollRef}
                                             className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar scroll-smooth pt-16 relative z-10"
                                         >
-                                            {messages.map((msg) => (
-                                                <motion.div
-                                                    key={msg.id}
-                                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                                >
-                                                    <div className={`
-                                                    max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13.5px] font-medium leading-[1.4] shadow-2xl
-                                                    ${msg.role === 'user'
-                                                            ? 'bg-[#1E1E1E] text-white rounded-br-none border border-white/5'
-                                                            : 'bg-white/5 text-slate-100 rounded-bl-none border border-white/10 backdrop-blur-xl'}
-                                                `}>
-                                                        {msg.content}
-                                                    </div>
-                                                </motion.div>
-                                            ))}
+                                            <AnimatePresence initial={false}>
+                                                {messages.map((msg) => (
+                                                    <MessageBubble key={msg.id} msg={msg} />
+                                                ))}
+                                            </AnimatePresence>
                                             {agentState === 'thinking' && (
                                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                                                     <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-none border border-white/5 flex gap-1">
@@ -656,46 +692,14 @@ export default function PhoneCallUI({
                     <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-6">Extracted Metadata</h2>
 
                     <div className="space-y-4 flex-1">
-                        {(mode === 'sales' ? [
-                            { key: 'business_type', label: 'Business Type', icon: '🏢' },
-                            { key: 'goal', label: 'Primary Goal', icon: '🎯' },
-                            { key: 'urgency', label: 'Timeline', icon: '⏱️' },
-                            { key: 'budget_readiness', label: 'Budget Status', icon: '💰' },
-                        ] : [
-                            { key: 'issue_type', label: 'Issue Type', icon: '⚠️' },
-                            { key: 'account_status', label: 'Account Status', icon: '👤' },
-                            { key: 'frustration_level', label: 'Emotion', icon: '🔥' },
-                            { key: 'resolution_path', label: 'Resolution', icon: '✅' },
-                        ]).map((item) => {
-                            const val = qualification[item.key];
-                            const isDone = !!val;
-                            return (
-                                <motion.div
-                                    key={item.key}
-                                    initial={false}
-                                    animate={{ backgroundColor: isDone ? 'rgba(34, 197, 94, 0.05)' : 'transparent' }}
-                                    className={`p-4 rounded-2xl border transition-all duration-500 ${isDone ? 'border-green-500/30' : 'border-white/5 bg-white/[0.02]'}`}
-                                >
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <div className="flex items-center gap-2.5 text-xs font-bold text-slate-300">
-                                            <span className="opacity-50 grayscale">{item.icon}</span> {item.label}
-                                        </div>
-                                        {isDone && (
-                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                                                <CheckCircle2 size={14} className="text-green-500" />
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                    <div className="text-[11px] pl-7">
-                                        {isDone ? (
-                                            <span className="text-white font-medium capitalize">{val}</span>
-                                        ) : (
-                                            <span className="text-slate-600 italic">Listening...</span>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
+                        {qualificationItems[mode].map((item: any) => (
+                            <QualificationItem
+                                key={item.key}
+                                item={item}
+                                val={qualification[item.key]}
+                                isDone={!!qualification[item.key]}
+                            />
+                        ))}
                     </div>
 
                     {qualificationComplete && (

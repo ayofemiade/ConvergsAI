@@ -51,40 +51,48 @@ const PRESETS = [
     }
 ];
 
+const BackgroundAmbience = React.memo(() => (
+    <>
+        <div className="fixed inset-0 animate-aurora pointer-events-none z-0 opacity-50 will-change-transform" />
+        <div className="fixed inset-0 stars pointer-events-none z-0" />
+    </>
+));
+BackgroundAmbience.displayName = 'BackgroundAmbience';
+
 export default function PlaygroundPage() {
     const [activeMode, setActiveMode] = useState<'sales' | 'support'>('sales');
-    const filteredPresets = PRESETS.filter(p => p.mode === activeMode);
+    const filteredPresets = React.useMemo(() => PRESETS.filter(p => p.mode === activeMode), [activeMode]);
 
     const [systemPrompt, setSystemPrompt] = useState(filteredPresets[0].prompt);
     const [activePreset, setActivePreset] = useState(0);
     const [phoneKey, setPhoneKey] = useState(0);
-    const { user, userName, loading, openAuthModal } = useAuth();
+    const { user, userName, openAuthModal } = useAuth();
 
-    const handleModeSelect = (mode: 'sales' | 'support') => {
+    const handleModeSelect = React.useCallback((mode: 'sales' | 'support') => {
         setActiveMode(mode);
         const firstOfMode = PRESETS.find(p => p.mode === mode);
         if (firstOfMode) {
             setSystemPrompt(firstOfMode.prompt);
             setActivePreset(0);
         }
-    };
+    }, []);
 
-    const handlePresetSelect = (presetName: string) => {
+    const handlePresetSelect = React.useCallback((presetName: string) => {
         const index = filteredPresets.findIndex(p => p.name === presetName);
         const preset = filteredPresets[index];
-        setActivePreset(index);
-        setSystemPrompt(preset.prompt);
-    };
+        if (preset) {
+            setActivePreset(index);
+            setSystemPrompt(preset.prompt);
+        }
+    }, [filteredPresets]);
 
-    const handleRestart = () => {
+    const handleRestart = React.useCallback(() => {
         setPhoneKey(prev => prev + 1);
-    };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30">
-            {/* Background Ambience */}
-            <div className="fixed inset-0 animate-aurora pointer-events-none z-0 opacity-50" />
-            <div className="fixed inset-0 stars pointer-events-none z-0" />
+            <BackgroundAmbience />
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
                 {/* Header */}
