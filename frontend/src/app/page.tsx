@@ -470,9 +470,10 @@ export default function LandingPage() {
                             {[
                                 {
                                     step: "01",
-                                    title: "Connect CRM",
-                                    desc: "One-click integration with HubSpot, Salesforce, or Zendesk. We sync your pipeline and support tickets in under 5 minutes.",
-                                    icon: <LinkIcon className="text-blue-400" size={24} />
+                                    title: "Get Started",
+                                    desc: "Choose your path to activation:",
+                                    substates: ["Start instantly (default)", "Connect CRM (optional)"],
+                                    icon: <Sparkles className="text-blue-400" size={24} />
                                 },
                                 {
                                     step: "02",
@@ -503,7 +504,17 @@ export default function LandingPage() {
                                         </div>
                                     </div>
                                     <h3 className="text-2xl font-bold mb-4 tracking-tight">{step.title}</h3>
-                                    <p className="text-slate-400 leading-relaxed max-w-xs font-medium">{step.desc}</p>
+                                    <p className="text-slate-400 leading-relaxed max-w-xs font-medium mb-4">{step.desc}</p>
+                                    {'substates' in step && (
+                                        <ul className="space-y-2 text-left">
+                                            {(step.substates as string[]).map((s, idx) => (
+                                                <li key={idx} className="flex items-center gap-2 text-xs font-bold text-blue-400/80 uppercase tracking-widest">
+                                                    <div className="w-1 h-1 rounded-full bg-blue-500" />
+                                                    {s}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </motion.div>
                             ))}
                         </div>
