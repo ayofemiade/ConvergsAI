@@ -7,8 +7,16 @@ from app.utils.timing import timeit
 
 class CerebrasService:
     def __init__(self):
-        self.client = AsyncCerebras(api_key=settings.CEREBRAS_API_KEY)
+        self._client = None
         self.model = "llama3.3-70b"
+
+    @property
+    def client(self):
+        if self._client is None:
+            if not settings.CEREBRAS_API_KEY:
+                raise ValueError("CEREBRAS_API_KEY is not set. Cannot initialize client.")
+            self._client = AsyncCerebras(api_key=settings.CEREBRAS_API_KEY)
+        return self._client
 
     @timeit
     async def chat_completion(
