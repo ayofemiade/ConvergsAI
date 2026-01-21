@@ -20,5 +20,5 @@ COPY . .
 # Default port for FastAPI (if running as web)
 EXPOSE 8000
 
-# We don't specify CMD here so it can be overridden by fly.toml
-# to run either 'python -m app.main' or 'python -m app.worker start'
+# Default command to run the FastAPI application
+CMD ["python", "-m", "app.main"]
