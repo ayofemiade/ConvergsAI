@@ -21,7 +21,7 @@ async def run_livekit_worker():
     logger.info("Starting LiveKit Agent Worker...")
     try:
         # Run the agent server in the background
-        await cli.run_app(server, log_level="INFO")
+        await cli.run_app(server)
     except Exception as e:
         logger.error(f"LiveKit Worker error: {e}")
 
