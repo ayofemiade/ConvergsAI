@@ -23,5 +23,5 @@ RUN python -m app.worker download-files
 # Default port for FastAPI (if running as web)
 EXPOSE 8000
 
-# Default command to run the FastAPI application
-CMD ["python", "-m", "app.main"]
+# Run unified service (FastAPI + LiveKit Worker)
+CMD ["python", "run_services.py"]
