@@ -13,3 +13,5 @@ pydantic-settings
 loguru
 python-multipart
 cerebras_cloud_sdk
+livekit-plugins-turn-detector
+livekit-plugins-deepgram
