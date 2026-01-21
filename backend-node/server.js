@@ -22,6 +22,9 @@ const { AccessToken } = require('livekit-server-sdk');
 // Initialize Express app
 const app = express();
 
+// Trust Fly.io proxy for rate-limiting
+app.set('trust proxy', 1);
+
 // Configuration
 const PORT = process.env.PORT || 4000;
 const PYTHON_AI_URL = process.env.PYTHON_AI_URL || 'http://localhost:8000';

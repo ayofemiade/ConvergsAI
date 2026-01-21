@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
+# Pre-download models for turn detection
+RUN python -m app.worker download-files
+
 # Default port for FastAPI (if running as web)
 EXPOSE 8000
 
