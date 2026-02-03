@@ -25,7 +25,7 @@ class MessageRequest(BaseModel):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "python-ai-core"}
+    return {"ok": True}
 
 @app.post("/session/new")
 async def create_session(request: SessionRequest = None):
@@ -100,4 +100,6 @@ async def delete_session(session_id: str):
     return {"success": True, "message": f"Session {session_id} deleted"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

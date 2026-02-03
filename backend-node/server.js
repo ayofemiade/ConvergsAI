@@ -79,33 +79,9 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Health Check Endpoint
-app.get('/health', async (req, res) => {
-  try {
-    // Check Python AI backend
-    const pythonHealth = await axios.get(`${PYTHON_AI_URL}/health`, {
-      timeout: 5000
-    });
-
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      services: {
-        gateway: 'online',
-        pythonAI: pythonHealth.data.status || 'online'
-      }
-    });
-  } catch (error) {
-    console.error('Health check failed:', error.message);
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      services: {
-        gateway: 'online',
-        pythonAI: 'offline'
-      },
-      error: error.message
-    });
-  }
+// Must be lightweight for platform health monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({ ok: true });
 });
 
 // Root Endpoint
@@ -361,7 +337,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════╗
 ║   AI Sales Agent - API Gateway       ║
