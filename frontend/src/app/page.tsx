@@ -135,7 +135,7 @@ export default function LandingPage() {
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 relative">
                             <Image
-                                src="/logo.png"
+                                src="/convergsai logo nb.png"
                                 alt=""
                                 fill
                                 sizes="32px"
@@ -728,7 +728,7 @@ export default function LandingPage() {
                     <div>
                         <div className="flex items-center gap-2 mb-6">
                             <div className="w-5 h-5 relative">
-                                <Image src="/logo.png" alt="ConvergsAI" fill sizes="20px" className="object-contain" />
+                                <Image src="/convergsai logo nb.png" alt="ConvergsAI" fill sizes="20px" className="object-contain" />
                             </div>
                             <span className="text-lg font-bold text-white">ConvergsAI</span>
                         </div>
