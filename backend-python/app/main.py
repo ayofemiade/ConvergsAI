@@ -23,6 +23,11 @@ class MessageRequest(BaseModel):
     text: str
     session_id: str
 
+@app.get("/")
+@app.head("/")
+async def root():
+    return {"status": "ok", "service": "ConvergsAI Unified Service"}
+
 @app.get("/health")
 async def health_check():
     return {"ok": True}

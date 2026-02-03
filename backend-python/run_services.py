@@ -19,10 +19,18 @@ async def run_livekit_worker():
     
     logger.info("Starting LiveKit Agent Worker...")
     try:
+        # Optimize worker for restricted environments
+        server.update_options(
+            num_idle_processes=1,  # Keep 1 warm process to save memory
+            initialize_process_timeout=60, # Allow more time for initialization
+        )
+        
         # Run the agent server programmatically within the existing loop
         await server.run()
+    except asyncio.CancelledError:
+        logger.info("LiveKit Worker shutdown requested")
     except Exception as e:
-        logger.error(f"LiveKit Worker error: {e}")
+        logger.error(f"LiveKit Worker error: {e}", exc_info=True)
 
 
 async def run_fastapi_server():
@@ -61,12 +69,24 @@ async def main():
         return_when=asyncio.FIRST_EXCEPTION
     )
     
+    # Clean up pending tasks
+    for task in pending:
+        task.cancel()
+        
     # Check if any task failed
     for task in done:
         if task.exception():
-            logger.error(f"A critical service failed: {task.exception()}")
+            logger.error(f"A critical service failed: {task.exception()}", exc_info=True)
             # Re-raise to ensure the process exits with non-zero code
             raise task.exception()
+        else:
+            # Get the name of the task that finished
+            task_name = "Unknown"
+            if "run_fastapi_server" in str(task.get_coro()):
+                task_name = "FastAPI Server"
+            elif "run_livekit_worker" in str(task.get_coro()):
+                task_name = "LiveKit Worker"
+            logger.warning(f"Service '{task_name}' finished unexpectedly.")
             
     # If we get here, one of the tasks finished unexpectedly
     logger.warning("One of the unified services stopped unexpectedly.")
