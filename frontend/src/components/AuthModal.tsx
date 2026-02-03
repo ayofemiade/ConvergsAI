@@ -84,13 +84,13 @@ export default function AuthModal() {
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.2, type: "spring" }}
-                                className="w-48 h-12 relative mb-8"
+                                className="w-64 h-16 sm:w-72 sm:h-18 relative mb-12"
                             >
                                 <Image
                                     src="/convergsai logo nb.png"
                                     alt="ConvergsAI Logo"
                                     fill
-                                    sizes="192px"
+                                    sizes="288px"
                                     className="object-contain"
                                 />
                             </motion.div>

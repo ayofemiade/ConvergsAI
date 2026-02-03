@@ -46,8 +46,8 @@ const ProgressIndicator = ({ currentStep }: { currentStep: Step }) => {
         <div className="fixed top-0 left-0 right-0 z-[100] px-6 py-4 bg-slate-950/50 backdrop-blur-xl border-b border-white/5">
             <div className="max-w-6xl mx-auto flex items-center justify-between">
                 <Link href="/" className="hidden sm:block">
-                    <div className="w-36 h-9 relative">
-                        <Image src="/convergsai logo nb.png" alt="ConvergsAI" fill sizes="144px" className="object-contain" />
+                    <div className="w-48 h-12 sm:w-56 sm:h-14 relative">
+                        <Image src="/convergsai logo nb.png" alt="ConvergsAI" fill sizes="224px" className="object-contain" />
                     </div>
                 </Link>
                 <div className="flex items-center justify-center gap-4 flex-1">

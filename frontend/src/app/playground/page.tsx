@@ -104,12 +104,12 @@ export default function PlaygroundPage() {
                                 <ArrowLeft size={18} />
                             </Link>
                             <Link href="/">
-                                <div className="w-40 h-10 sm:w-48 sm:h-12 relative transition-transform hover:scale-105">
+                                <div className="w-56 h-14 sm:w-72 sm:h-18 md:w-80 md:h-20 relative transition-transform hover:scale-105">
                                     <Image
                                         src="/convergsai logo nb.png"
                                         alt="ConvergsAI Logo"
                                         fill
-                                        sizes="(max-width: 640px) 160px, 192px"
+                                        sizes="(max-width: 640px) 224px, (max-width: 1024px) 288px, 320px"
                                         className="object-contain"
                                     />
                                 </div>

@@ -131,15 +131,15 @@ export default function LandingPage() {
 
             {/* Navbar */}
             <nav className="fixed w-full z-50 transition-all duration-300 top-0 pt-4 px-4">
-                <div className="max-w-7xl mx-auto glass-premium rounded-2xl h-16 flex items-center justify-between px-6">
+                <div className="max-w-7xl mx-auto glass-premium rounded-[2.5rem] h-24 sm:h-28 flex items-center justify-between px-10">
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center">
-                            <div className="w-40 h-10 sm:w-48 sm:h-12 md:w-56 md:h-14 relative transition-transform hover:scale-105 duration-300">
+                            <div className="w-64 h-16 sm:w-80 sm:h-20 md:w-[400px] md:h-24 relative transition-transform hover:scale-105 duration-300">
                                 <Image
                                     src="/convergsai logo nb.png"
                                     alt="ConvergsAI Logo"
                                     fill
-                                    sizes="(max-width: 640px) 160px, (max-width: 1024px) 192px, 224px"
+                                    sizes="(max-width: 640px) 320px, (max-width: 1024px) 400px, 500px"
                                     priority
                                     className="object-contain object-left"
                                 />
@@ -223,13 +223,13 @@ export default function LandingPage() {
                         >
                             <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl" onClick={() => setMobileMenuOpen(false)} />
                             <div className="glass-premium w-full rounded-[2.5rem] p-8 flex flex-col gap-6 text-center relative z-10 border-white/20">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-48 h-12 relative">
+                                <div className="flex justify-center mb-4">
+                                    <div className="w-64 h-16 sm:w-72 sm:h-18 relative">
                                         <Image
                                             src="/convergsai logo nb.png"
                                             alt="ConvergsAI Logo"
                                             fill
-                                            sizes="192px"
+                                            sizes="288px"
                                             className="object-contain"
                                         />
                                     </div>
@@ -278,7 +278,7 @@ export default function LandingPage() {
                 ref={heroRef}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
-                className="relative pt-32 pb-20 lg:pt-48 lg:pb-40 overflow-visible px-4 sm:px-6 perspective-1000"
+                className="relative pt-40 pb-20 lg:pt-56 lg:pb-40 overflow-visible px-4 sm:px-6 perspective-1000"
             >
                 {/* Optimized Background Loading */}
                 <div className="absolute inset-0 z-0">
@@ -738,13 +738,13 @@ export default function LandingPage() {
             <footer className="border-t border-white/5 bg-slate-950 py-16 relative z-10">
                 <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-sm text-slate-400">
                     <div>
-                        <div className="flex items-center mb-6">
-                            <div className="w-48 h-12 relative">
+                        <div className="flex items-center mb-10">
+                            <div className="w-80 h-20 relative">
                                 <Image
                                     src="/convergsai logo nb.png"
                                     alt="ConvergsAI"
                                     fill
-                                    sizes="192px"
+                                    sizes="320px"
                                     className="object-contain object-left"
                                 />
                             </div>
