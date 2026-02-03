@@ -20,6 +20,7 @@ import {
     Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // --- TYPES ---
 type Step = 'welcome' | 'use-case' | 'business' | 'crm' | 'agent' | 'knowledge' | 'go-live';
@@ -43,33 +44,40 @@ const ProgressIndicator = ({ currentStep }: { currentStep: Step }) => {
 
     return (
         <div className="fixed top-0 left-0 right-0 z-[100] px-6 py-4 bg-slate-950/50 backdrop-blur-xl border-b border-white/5">
-            <div className="max-w-4xl mx-auto flex items-center justify-between">
-                {STEPS.map((step, idx) => {
-                    const isActive = idx <= currentIndex;
-                    const isCurrent = step === currentStep;
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+                <Link href="/" className="hidden sm:block">
+                    <div className="w-36 h-9 relative">
+                        <Image src="/convergsai logo nb.png" alt="ConvergsAI" fill sizes="144px" className="object-contain" />
+                    </div>
+                </Link>
+                <div className="flex items-center justify-center gap-4 flex-1">
+                    {STEPS.map((step, idx) => {
+                        const isActive = idx <= currentIndex;
+                        const isCurrent = step === currentStep;
 
-                    return (
-                        <div key={step} className="flex items-center gap-2">
-                            <div className={`
+                        return (
+                            <div key={step} className="flex items-center gap-2">
+                                <div className={`
                                 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500
                                 ${isCurrent ? 'bg-blue-600 text-white ring-4 ring-blue-500/20' :
-                                    isActive ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' :
-                                        'bg-white/5 text-slate-600 border border-white/5'}
+                                        isActive ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' :
+                                            'bg-white/5 text-slate-600 border border-white/5'}
                             `}>
-                                {isActive && !isCurrent ? <CheckCircle2 size={14} /> : idx + 1}
-                            </div>
-                            <span className={`
+                                    {isActive && !isCurrent ? <CheckCircle2 size={14} /> : idx + 1}
+                                </div>
+                                <span className={`
                                 hidden md:block text-[10px] font-black uppercase tracking-widest transition-colors duration-500
                                 ${isCurrent ? 'text-white' : isActive ? 'text-blue-400/70' : 'text-slate-700'}
                             `}>
-                                {STEP_LABELS[step]}
-                            </span>
-                            {idx < STEPS.length - 1 && (
-                                <div className={`hidden lg:block w-8 h-[1px] mx-2 ${idx < currentIndex ? 'bg-blue-600/30' : 'bg-white/5'}`} />
-                            )}
-                        </div>
-                    );
-                })}
+                                    {STEP_LABELS[step]}
+                                </span>
+                                {idx < STEPS.length - 1 && (
+                                    <div className={`hidden lg:block w-8 h-[1px] mx-2 ${idx < currentIndex ? 'bg-blue-600/30' : 'bg-white/5'}`} />
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

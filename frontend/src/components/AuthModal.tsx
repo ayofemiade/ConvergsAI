@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { useAuth } from './AuthContext';
 
 export default function AuthModal() {
@@ -79,14 +80,19 @@ export default function AuthModal() {
                         </button>
 
                         <div className="relative z-10 p-8 md:p-12 flex flex-col items-center text-center">
-                            {/* Logo/Icon */}
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.2, type: "spring" }}
-                                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-8 shadow-lg shadow-blue-500/20"
+                                className="w-48 h-12 relative mb-8"
                             >
-                                <Lock className="text-white" size={32} />
+                                <Image
+                                    src="/convergsai logo nb.png"
+                                    alt="ConvergsAI Logo"
+                                    fill
+                                    sizes="192px"
+                                    className="object-contain"
+                                />
                             </motion.div>
 
                             <h2 className="text-3xl font-bold tracking-tight text-white mb-3">

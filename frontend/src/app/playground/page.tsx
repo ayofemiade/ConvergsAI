@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import PhoneCallUI from '@/components/PhoneCallUI';
 import { ArrowLeft, Wand2, RefreshCw, Zap, Play, User } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/components/AuthContext';
 import { motion } from 'framer-motion';
 
@@ -97,13 +98,27 @@ export default function PlaygroundPage() {
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
                 {/* Header */}
                 <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-12">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5">
-                            <ArrowLeft size={18} />
-                        </Link>
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            <Link href="/" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5">
+                                <ArrowLeft size={18} />
+                            </Link>
+                            <Link href="/">
+                                <div className="w-40 h-10 sm:w-48 sm:h-12 relative transition-transform hover:scale-105">
+                                    <Image
+                                        src="/convergsai logo nb.png"
+                                        alt="ConvergsAI Logo"
+                                        fill
+                                        sizes="(max-width: 640px) 160px, 192px"
+                                        className="object-contain"
+                                    />
+                                </div>
+                            </Link>
+                        </div>
+                        <div className="hidden sm:block h-8 w-px bg-white/10" />
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Live Playground</h1>
-                            <p className="text-xs sm:text-slate-400 text-slate-500">ConvergsAI Agent Configuration</p>
+                            <h1 className="text-xl font-bold tracking-tight">Live Playground</h1>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Agent Configuration</p>
                         </div>
                     </div>
 

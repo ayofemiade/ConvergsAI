@@ -132,18 +132,19 @@ export default function LandingPage() {
             {/* Navbar */}
             <nav className="fixed w-full z-50 transition-all duration-300 top-0 pt-4 px-4">
                 <div className="max-w-7xl mx-auto glass-premium rounded-2xl h-16 flex items-center justify-between px-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 relative">
-                            <Image
-                                src="/convergsai logo nb.png"
-                                alt=""
-                                fill
-                                sizes="32px"
-                                priority
-                                className="object-contain"
-                            />
-                        </div>
-                        <span className="text-lg font-bold tracking-tight">ConvergsAI</span>
+                    <div className="flex items-center">
+                        <Link href="/" className="flex items-center">
+                            <div className="w-40 h-10 sm:w-48 sm:h-12 md:w-56 md:h-14 relative transition-transform hover:scale-105 duration-300">
+                                <Image
+                                    src="/convergsai logo nb.png"
+                                    alt="ConvergsAI Logo"
+                                    fill
+                                    sizes="(max-width: 640px) 160px, (max-width: 1024px) 192px, 224px"
+                                    priority
+                                    className="object-contain object-left"
+                                />
+                            </div>
+                        </Link>
                     </div>
 
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
@@ -222,6 +223,17 @@ export default function LandingPage() {
                         >
                             <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl" onClick={() => setMobileMenuOpen(false)} />
                             <div className="glass-premium w-full rounded-[2.5rem] p-8 flex flex-col gap-6 text-center relative z-10 border-white/20">
+                                <div className="flex justify-center mb-2">
+                                    <div className="w-48 h-12 relative">
+                                        <Image
+                                            src="/convergsai logo nb.png"
+                                            alt="ConvergsAI Logo"
+                                            fill
+                                            sizes="192px"
+                                            className="object-contain"
+                                        />
+                                    </div>
+                                </div>
                                 <Link href="/playground" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-bold text-blue-300 flex items-center justify-center gap-2">
                                     <Zap /> Playground
                                 </Link>
@@ -726,11 +738,16 @@ export default function LandingPage() {
             <footer className="border-t border-white/5 bg-slate-950 py-16 relative z-10">
                 <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-sm text-slate-400">
                     <div>
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="w-5 h-5 relative">
-                                <Image src="/convergsai logo nb.png" alt="ConvergsAI" fill sizes="20px" className="object-contain" />
+                        <div className="flex items-center mb-6">
+                            <div className="w-48 h-12 relative">
+                                <Image
+                                    src="/convergsai logo nb.png"
+                                    alt="ConvergsAI"
+                                    fill
+                                    sizes="192px"
+                                    className="object-contain object-left"
+                                />
                             </div>
-                            <span className="text-lg font-bold text-white">ConvergsAI</span>
                         </div>
                         <p className="mb-6 leading-relaxed font-medium">Automating the future of sales conversations & support tickets with human-like AI.</p>
                         <div className="flex gap-4">
