@@ -17,11 +17,9 @@ from livekit.agents import (
     room_io,
     llm,
 )
-from livekit.plugins import silero
 # Integration imports
 from app.agent.sales_llm import SalesLLM
 from app.agent.prompts import DETERMINISTIC_SYSTEM_PROMPT
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("basic-agent")
 
@@ -43,6 +41,7 @@ server = AgentServer()
 
 
 def prewarm(proc: JobProcess):
+    from livekit.plugins import silero
     proc.userdata["vad"] = silero.VAD.load()
 
 
@@ -57,6 +56,8 @@ async def entrypoint(ctx: JobContext):
 
     # Session ID corresponds to room name for memory persistence
     session_id = ctx.room.name
+    
+    from livekit.plugins.turn_detector.multilingual import MultilingualModel
     
     session = AgentSession(
         stt="deepgram/nova-3",

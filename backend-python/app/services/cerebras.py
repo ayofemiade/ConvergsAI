@@ -1,6 +1,4 @@
-import os
 from typing import List, Dict, Any, Optional
-from cerebras.cloud.sdk import AsyncCerebras
 from app.config import settings
 from app.logger_config import logger
 from app.utils.timing import timeit
@@ -13,6 +11,7 @@ class CerebrasService:
     @property
     def client(self):
         if self._client is None:
+            from cerebras.cloud.sdk import AsyncCerebras
             if not settings.CEREBRAS_API_KEY:
                 raise ValueError("CEREBRAS_API_KEY is not set. Cannot initialize client.")
             self._client = AsyncCerebras(api_key=settings.CEREBRAS_API_KEY)

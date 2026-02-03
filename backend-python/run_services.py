@@ -18,11 +18,13 @@ async def run_livekit_worker():
     from app.worker import server
     
     logger.info("Starting LiveKit Agent Worker...")
+    from livekit.agents import job
     try:
         # Optimize worker for restricted environments
         server.update_options(
             num_idle_processes=1,  # Keep 1 warm process to save memory
             initialize_process_timeout=60, # Allow more time for initialization
+            job_executor_type=job.JobExecutorType.PROCESS, # Ensure process isolation
         )
         
         # Run the agent server programmatically within the existing loop
@@ -63,6 +65,10 @@ async def main():
         asyncio.create_task(run_fastapi_server()),
         asyncio.create_task(run_livekit_worker())
     ]
+
+    # Run GC to clear import overhead before entering wait
+    import gc
+    gc.collect()
     
     done, pending = await asyncio.wait(
         tasks, 
