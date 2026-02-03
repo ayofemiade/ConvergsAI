@@ -129,6 +129,18 @@ class SalesLLMStream(llm.LLMStream):
         tokens_yielded = 0
         initial_msg = user_msg # Store for correction check
 
+        def _send_chunk(content: str):
+            self._event_ch.send_nowait(
+                llm.ChatChunk(
+                    choices=[
+                        llm.Choice(
+                            delta=llm.ChoiceDelta(role="assistant", content=content),
+                            index=0,
+                        )
+                    ]
+                )
+            )
+
         def _get_text(msg_content):
             if isinstance(msg_content, str): return msg_content
             if isinstance(msg_content, list): return " ".join([c.text if hasattr(c, "text") else str(c) for c in msg_content])
@@ -156,42 +168,22 @@ class SalesLLMStream(llm.LLMStream):
                         if len(curr_msg_text) > len(initial_msg) + 15:
                             # User said way more than we thought. Pivot.
                             logger.warning(f"[SalesLLM] Late Correction! Predicted: '{initial_msg}', Real: '{curr_msg_text}'")
-                            self._event_ch.send_nowait(
-                                llm.ChatChunk(
-                                    id="",
-                                    delta=llm.ChoiceDelta(role="assistant", content="Actually, wait, I think I missed that first part. ")
-                                )
-                            )
+                            _send_chunk("Actually, wait, I think I missed that first part. ")
                             break
 
                 # Hybrid Chunking
                 if tokens_yielded <= 3:
-                     self._event_ch.send_nowait(
-                        llm.ChatChunk(
-                            id="",
-                            delta=llm.ChoiceDelta(role="assistant", content=token)
-                        )
-                    )
-                     continue
+                    _send_chunk(token)
+                    continue
 
                 chunk_buffer += token
                 if any(p in token for p in [" ", ".", "!", "?", ",", "\n"]):
-                    self._event_ch.send_nowait(
-                        llm.ChatChunk(
-                            id="",
-                            delta=llm.ChoiceDelta(role="assistant", content=chunk_buffer)
-                        )
-                    )
+                    _send_chunk(chunk_buffer)
                     chunk_buffer = ""
             
             # Final flush
             if chunk_buffer:
-                self._event_ch.send_nowait(
-                    llm.ChatChunk(
-                        id="",
-                        delta=llm.ChoiceDelta(role="assistant", content=chunk_buffer)
-                    )
-                )
+                _send_chunk(chunk_buffer)
 
             # [INTELLIGENCE BROADCAST]
             # After the stream is done, we broadcast the latest analysis to the room
