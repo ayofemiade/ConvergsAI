@@ -104,7 +104,7 @@ export default function PlaygroundPage() {
                                 <ArrowLeft size={16} />
                             </Link>
                             <Link href="/">
-                                <div className="w-48 h-12 sm:w-64 sm:h-16 md:w-80 md:h-20 relative transition-transform hover:scale-105">
+                                <div className="w-52 h-16 sm:w-64 sm:h-16 md:w-80 md:h-20 relative transition-transform hover:scale-105">
                                     <Image
                                         src="/convergsai logo nb.png"
                                         alt="ConvergsAI Logo"
@@ -135,7 +135,7 @@ export default function PlaygroundPage() {
                     ) : (
                         <button
                             onClick={openAuthModal}
-                            className="bg-white text-black py-2 sm:py-2.5 px-5 sm:px-6 rounded-full font-bold shadow-xl hover:scale-105 transition-transform active:scale-95 flex items-center gap-2 text-sm sm:text-base"
+                            className="bg-white text-black py-2.5 sm:py-3.0 px-5 sm:px-6 rounded-full font-bold shadow-xl hover:scale-105 transition-transform active:scale-95 flex items-center gap-2 text-sm sm:text-base"
                         >
                             Sign In
                         </button>
