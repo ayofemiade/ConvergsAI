@@ -95,54 +95,54 @@ export default function PlaygroundPage() {
         <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30">
             <BackgroundAmbience />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
+            <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-12">
                 {/* Header */}
-                <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-12">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-4">
-                            <Link href="/" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5">
-                                <ArrowLeft size={18} />
+                <header className="flex items-center justify-between gap-3 sm:gap-6 mb-8 sm:mb-12">
+                    <div className="flex items-center gap-3 sm:gap-6">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <Link href="/" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5">
+                                <ArrowLeft size={16} />
                             </Link>
                             <Link href="/">
-                                <div className="w-56 h-14 sm:w-72 sm:h-18 md:w-80 md:h-20 relative transition-transform hover:scale-105">
+                                <div className="w-48 h-12 sm:w-64 sm:h-16 md:w-80 md:h-20 relative transition-transform hover:scale-105">
                                     <Image
                                         src="/convergsai logo nb.png"
                                         alt="ConvergsAI Logo"
                                         fill
-                                        sizes="(max-width: 640px) 224px, (max-width: 1024px) 288px, 320px"
+                                        sizes="(max-width: 640px) 192px, (max-width: 1024px) 256px, 320px"
                                         className="object-contain"
                                     />
                                 </div>
                             </Link>
                         </div>
-                        <div className="hidden sm:block h-8 w-px bg-white/10" />
-                        <div>
-                            <h1 className="text-xl font-bold tracking-tight">Live Playground</h1>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Agent Configuration</p>
+                        <div className="hidden lg:block h-8 w-px bg-white/10" />
+                        <div className="hidden sm:block">
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight">Live Playground</h1>
+                            <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">Agent Configuration</p>
                         </div>
                     </div>
 
                     {user ? (
-                        <div className="flex items-center gap-3 bg-white/5 border border-white/10 py-1.5 px-3 sm:py-2 sm:px-4 rounded-2xl self-end sm:self-auto">
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold shadow-lg text-xs sm:text-base">
+                        <div className="flex items-center gap-3 bg-white/5 border border-white/10 py-1.5 px-3 sm:py-2 sm:px-4 rounded-2xl">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold shadow-lg text-xs sm:text-base">
                                 {userName?.[0] || <User size={14} />}
                             </div>
-                            <div className="block sm:block">
-                                <div className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-none mb-1">Authenticated</div>
+                            <div className="block">
+                                <div className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-none mb-0.5 sm:mb-1">Authenticated</div>
                                 <div className="text-xs sm:text-sm font-bold text-white leading-none">{userName}</div>
                             </div>
                         </div>
                     ) : (
                         <button
                             onClick={openAuthModal}
-                            className="bg-white text-black py-2 sm:py-2.5 px-4 sm:px-6 rounded-full font-bold shadow-xl hover:scale-105 transition-transform active:scale-95 flex items-center gap-2 text-sm sm:text-base self-end sm:self-auto"
+                            className="bg-white text-black py-2 sm:py-2.5 px-5 sm:px-6 rounded-full font-bold shadow-xl hover:scale-105 transition-transform active:scale-95 flex items-center gap-2 text-sm sm:text-base"
                         >
                             Sign In
                         </button>
                     )}
                 </header>
 
-                <div className="grid lg:grid-cols-12 gap-8">
+                <div className="grid lg:grid-cols-12 gap-6 sm:gap-8">
                     {/* Controls Column */}
                     <div className="lg:col-span-4 space-y-6">
                         {/* Mode Selector */}
