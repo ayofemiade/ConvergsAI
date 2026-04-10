@@ -96,7 +96,7 @@ async def entrypoint(ctx: JobContext):
         # Passive tap: Forward words as they are generated without touching audio pipe
         async def _forward_transcript():
             cumulative_text = ""
-            async for segment in ev.handle.transcript:
+            async for segment in ev.stt_stream:
                 cumulative_text += segment
                 broadcast_ui_event({
                     "type": "text",
