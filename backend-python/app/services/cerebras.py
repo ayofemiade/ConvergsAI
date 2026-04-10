@@ -6,7 +6,7 @@ from app.utils.timing import timeit
 class CerebrasService:
     def __init__(self):
         self._client = None
-        self.model = "llama3.3-70b"
+        self.model = "llama3.1-8b"
 
     @property
     def client(self):
