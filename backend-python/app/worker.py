@@ -16,6 +16,9 @@ from livekit.agents import (
     metrics,
     voice,
     llm,
+    TurnHandlingOptions,
+    EndpointingOptions,
+    InterruptionOptions
 )
 import json
 
@@ -50,10 +53,10 @@ async def entrypoint(ctx: JobContext):
     
     tts =  deepgram.TTS( model="aura-2-odysseus-en")
 
-    # In LiveKit v1.5.2, AgentSession is the primary orchestrator.
-    # We define an Agent instance to hold the instructions.
+    # 1. Emma's Identity & Logic (The Brain)
+    # We apply the wrapped prompt immediately to enforce performance from t=0
     emma_agent = voice.Agent(
-        instructions=DETERMINISTIC_SYSTEM_PROMPT,
+        instructions=generate_wrapped_prompt(DETERMINISTIC_SYSTEM_PROMPT),
         stt=stt,
         llm=agent_llm,
         tts=tts,
@@ -68,40 +71,42 @@ async def entrypoint(ctx: JobContext):
         except Exception as e:
             logger.error(f"UI Sync Error: {e}")
 
+    # 2. Emma's Execution Loop (The Orchestrator)
+    # This handles the real-time VAD -> LLM -> TTS pipeline
     session = voice.AgentSession(
         stt=stt,
         llm=agent_llm,
         tts=tts,
         vad=ctx.proc.userdata["vad"],
-        allow_interruptions=True,
-        # Conservative latency for recovery (400ms)
-        turn_handling={
-            "endpointing": {
-                "min_delay": 0.4,
-                "max_delay": 3.0,
-            },
-            "interruption": {
-                "min_duration": 0.3,
-            }
-        }
+        preemptive_generation=True,
+        turn_handling=TurnHandlingOptions(
+            endpointing=EndpointingOptions(min_delay=0.4, max_delay=3.0),
+            interruption=InterruptionOptions(enabled=True, min_duration=0.3)
+        )
     )
 
-    # Metrics collection for engineering audit
+    # --- Live Events ---
     @session.on("session_usage_updated")
     def _on_usage_updated(usage):
         logger.debug(f"[Telemetry] Session Metrics: {usage}")
 
     @session.on("speech_created")
     def on_speech_created(ev: voice.SpeechCreatedEvent):
-        # Senior Fix: Use ev.handle.transcript which is the stable way to get the text 
-        # for a speech segment in this SDK version. 
-        if ev.handle and ev.handle.transcript:
-             broadcast_ui_event({
-                "type": "text",
-                "role": "assistant",
-                "text": ev.handle.transcript,
-                "is_final": True
-            })
+        # Bulletproof Fix: Use 'speech_handle' for v1.5.2
+        # Safely extract text from chat items to avoid UI dropouts
+        try:
+            handle = getattr(ev, "speech_handle", None)
+            if handle and hasattr(handle, "chat_items"):
+                text = "".join([i.text for i in handle.chat_items if hasattr(i, "text")])
+                if text:
+                    broadcast_ui_event({
+                        "type": "text",
+                        "role": "assistant",
+                        "text": text,
+                        "is_final": True
+                    })
+        except Exception as e:
+            logger.error(f"UI Sync Error in speech_created: {e}")
 
     @session.on("user_input_transcribed")
     def on_user_transcript(ev: voice.UserInputTranscribedEvent):
@@ -116,7 +121,7 @@ async def entrypoint(ctx: JobContext):
 
     @session.on("conversation_item_added")
     def on_item_added(ev: voice.ConversationItemAddedEvent):
-        # We broadcast the final context item to ensure bubble synchronization
+        # Final safety net to sync context items
         if isinstance(ev.item, llm.ChatMessage) and ev.item.role == "assistant":
             content = ev.item.content
             if isinstance(content, list):
@@ -131,7 +136,6 @@ async def entrypoint(ctx: JobContext):
                 })
 
     # --- Live Persona Sync ---
-    # Listen for configuration changes from the UI (presets/prompts)
     @ctx.room.on("data_received")
     def on_data_received(data: rtc.DataPacket):
         try:
@@ -142,14 +146,13 @@ async def entrypoint(ctx: JobContext):
                     logger.info(f"[Worker] Syncing persona instructions...")
                     wrapped_prompt = generate_wrapped_prompt(user_text)
                     asyncio.create_task(emma_agent.update_instructions(wrapped_prompt))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Persona Sync Error: {e}")
 
-    # Start the session with the defined agent and room context
-    # This binds all plugins into a high-performance streaming loop
+    # 5. Connect & Start Execution
     await session.start(agent=emma_agent, room=ctx.room)
     
-    # Emma's Initial Greeting
+    # 6. Smooth Greeting with Interruption Readiness
     session.say("Hello! This is Emma from ConvergsAI. How can I help you today?", allow_interruptions=True)
 
 if __name__ == "__main__":
