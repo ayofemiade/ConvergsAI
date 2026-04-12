@@ -16,9 +16,8 @@ module.exports = {
       name: "convergs-ai-worker",
       cwd: "./backend-python",
       script: "-m app.worker",
-      // Note: use "venv/bin/python" on Linux (Droplet) 
-      // or "venv/Scripts/python.exe" on Windows
-      interpreter: "venv/bin/python",
+      // Absolute path to ensure PM2 finds it on the Droplet
+      interpreter: "/root/ConvergsAI/backend-python/venv/bin/python",
       args: "start --num-processes 2",
       env: {
         PYTHONPATH: ".",
