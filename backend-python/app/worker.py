@@ -90,23 +90,16 @@ async def entrypoint(ctx: JobContext):
     def _on_usage_updated(usage):
         logger.debug(f"[Telemetry] Session Metrics: {usage}")
 
-    @session.on("speech_created")
+    @emma_agent.on("speech_created")
     def on_speech_created(ev: voice.SpeechCreatedEvent):
-        # Bulletproof Fix: Use 'speech_handle' for v1.5.2
-        # Safely extract text from chat items to avoid UI dropouts
         try:
+            # v1.5.2 uses speech_handle
             handle = getattr(ev, "speech_handle", None)
-            if handle and hasattr(handle, "chat_items"):
-                text = "".join([i.text for i in handle.chat_items if hasattr(i, "text")])
-                if text:
-                    broadcast_ui_event({
-                        "type": "text",
-                        "role": "assistant",
-                        "text": text,
-                        "is_final": True
-                    })
+            if handle:
+                # We broadcast the transcript immediately so the UI feels 'live'
+                broadcast_ui_event("assistant_transcript", getattr(handle, "transcript", ""))
         except Exception as e:
-            logger.error(f"UI Sync Error in speech_created: {e}")
+            logger.error(f"UI Sync Error: {e}")
 
     @session.on("user_input_transcribed")
     def on_user_transcript(ev: voice.UserInputTranscribedEvent):
