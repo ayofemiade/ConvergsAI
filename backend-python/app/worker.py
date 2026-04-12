@@ -20,7 +20,7 @@ from livekit.agents import (
 import json
 
 # Standardized Minimal Prompt
-from app.agent.prompts import DETERMINISTIC_SYSTEM_PROMPT
+from app.agent.prompts import DETERMINISTIC_SYSTEM_PROMPT, generate_wrapped_prompt
 
 logger = logging.getLogger("basic-agent")
 load_dotenv()
@@ -140,10 +140,11 @@ async def entrypoint(ctx: JobContext):
         try:
             payload = json.loads(data.data)
             if payload.get("type") == "metadata":
-                new_prompt = payload.get("prompt")
-                if new_prompt:
+                user_text = payload.get("prompt")
+                if user_text:
                     logger.info(f"[Worker] Syncing persona instructions...")
-                    asyncio.create_task(emma_agent.update_instructions(new_prompt))
+                    wrapped_prompt = generate_wrapped_prompt(user_text)
+                    asyncio.create_task(emma_agent.update_instructions(wrapped_prompt))
         except Exception:
             pass
 
@@ -152,7 +153,7 @@ async def entrypoint(ctx: JobContext):
     await session.start(agent=emma_agent, room=ctx.room)
     
     # Emma's Initial Greeting
-    session.say("Hello! This is Emma. How can I help you today?", allow_interruptions=True)
+    session.say("Hello! This is Emma from ConvergsAI. How can I help you today?", allow_interruptions=True)
 
 if __name__ == "__main__":
     cli.run_app(server)
