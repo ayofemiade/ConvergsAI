@@ -93,18 +93,15 @@ async def entrypoint(ctx: JobContext):
 
     @session.on("speech_created")
     def on_speech_created(ev: voice.SpeechCreatedEvent):
-        # Passive tap: Forward words as they are generated without touching audio pipe
-        async def _forward_transcript():
-            cumulative_text = ""
-            async for segment in ev.stt_stream:
-                cumulative_text += segment
-                broadcast_ui_event({
-                    "type": "text",
-                    "role": "assistant",
-                    "text": cumulative_text,
-                    "is_final": False
-                })
-        asyncio.create_task(_forward_transcript())
+        # Senior Fix: Use ev.handle.transcript which is the stable way to get the text 
+        # for a speech segment in this SDK version. 
+        if ev.handle and ev.handle.transcript:
+             broadcast_ui_event({
+                "type": "text",
+                "role": "assistant",
+                "text": ev.handle.transcript,
+                "is_final": True
+            })
 
     @session.on("user_input_transcribed")
     def on_user_transcript(ev: voice.UserInputTranscribedEvent):
