@@ -48,7 +48,7 @@ async def entrypoint(ctx: JobContext):
         api_key=os.environ.get("CEREBRAS_API_KEY")
     )
     
-    tts =  deepgram.TTS( model="aura-helios-en")
+    tts =  deepgram.TTS( model="aura-2-odysseus-en")
 
     # In LiveKit v1.5.2, AgentSession is the primary orchestrator.
     # We define an Agent instance to hold the instructions.
