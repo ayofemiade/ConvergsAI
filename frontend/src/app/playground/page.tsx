@@ -92,10 +92,10 @@ export default function PlaygroundPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30">
+        <div className="h-[100dvh] bg-[#020617] text-white font-sans selection:bg-blue-500/30 flex flex-col overflow-hidden">
             <BackgroundAmbience />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-12">
+            <div className="relative z-10 max-w-7xl mx-auto w-full px-3 sm:px-6 py-2 sm:py-6 flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
                 <header className="flex items-center justify-between gap-3 sm:gap-6 mb-4 sm:mb-12">
                     <div className="flex items-center gap-3 sm:gap-6">
@@ -142,9 +142,9 @@ export default function PlaygroundPage() {
                     )}
                 </header>
 
-                <div className="grid lg:grid-cols-12 gap-6 sm:gap-8">
+                <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 flex-1 overflow-hidden min-h-0">
                     {/* Controls Column */}
-                    <div className="lg:col-span-4 space-y-6">
+                    <div className="lg:col-span-4 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
                         {/* Mode Selector */}
                         <div className="glass-premium p-6 rounded-3xl space-y-4">
                             <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
@@ -227,12 +227,12 @@ export default function PlaygroundPage() {
                     </div>
 
                     {/* Preview Column */}
-                    <div className="lg:col-span-8">
-                        <div className="relative">
+                    <div className="lg:col-span-8 flex flex-col h-full overflow-hidden">
+                        <div className="relative flex-1 flex flex-col h-full">
 
                             {/* Phone Rendering */}
-                            <div className="glass-premium p-0.5 sm:p-1 rounded-[2rem] sm:rounded-[2.5rem] bg-slate-900/80 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl">
-                                <div className="rounded-[1.8rem] sm:rounded-[2rem] overflow-hidden bg-black border border-white/5 min-h-[500px] sm:min-h-[600px] relative">
+                            <div className="glass-premium p-0.5 sm:p-1 rounded-[2rem] sm:rounded-[2.5rem] bg-slate-900/80 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl flex-1 flex flex-col h-full overflow-hidden">
+                                <div className="rounded-[1.8rem] sm:rounded-[2rem] overflow-hidden bg-black border border-white/5 relative flex-1">
                                     <PhoneCallUI
                                         key={phoneKey}
                                         initialPrompt={systemPrompt}

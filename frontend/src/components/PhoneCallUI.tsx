@@ -168,8 +168,14 @@ export default function PhoneCallUI({
         ]
     }), []);
 
-    // Automated scroll management is now handled by flex-col-reverse CSS layout
-    // for a superior 'WhatsApp-style' performance and feel.
+    // Automated scroll management - Enhanced with explicit scroll-to-bottom effect
+    useEffect(() => {
+        if (scrollRef.current) {
+            // In flex-col-reverse, scrollTop = 0 is already the bottom.
+            // But for absolute certainty across all engines:
+            scrollRef.current.scrollTop = 0;
+        }
+    }, [messages, liveTranscript]);
 
     // Runtime config check
     useEffect(() => {
@@ -338,13 +344,13 @@ export default function PhoneCallUI({
     }, [sendMessage]);
 
     return (
-        <div className="w-full h-full min-h-[500px] lg:h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-2 lg:p-6 items-center lg:items-start justify-center overflow-hidden overscroll-none">
+        <div className="w-full h-full flex items-center justify-center p-2 lg:p-4 overflow-hidden overscroll-none bg-black/20">
 
             {/* PHONE INTERFACE */}
-            <div className="flex-1 h-full max-h-full relative group max-w-[420px] mx-auto lg:max-w-none w-full overflow-hidden">
+            <div className="h-full flex items-center justify-center relative w-full">
 
                 {/* Phone Body Shell - Realistic Depth */}
-                <div className="relative h-full w-full max-w-[400px] lg:max-w-none aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto transition-all">
+                <div className="relative max-h-full h-full aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto transition-all">
 
                     {/* Screen Reflection Overlay (Glass Effect) */}
                     <div className="absolute inset-0 z-50 pointer-events-none">
@@ -570,12 +576,15 @@ export default function PhoneCallUI({
                                                 )}
                                             </AnimatePresence>
 
-                                            {/* 3. History - Reversed so index 0 is bottom */}
+                                            {/* History - Reversed so index 0 is bottom */}
                                             <AnimatePresence initial={false}>
                                                 {[...messages].reverse().map((msg) => (
                                                     <MessageBubble key={msg.id} msg={msg} />
                                                 ))}
                                             </AnimatePresence>
+                                            
+                                            {/* Top Spacer to allow scrolling up into history */}
+                                            <div className="h-20 shrink-0" />
                                         </div>
 
                                         {/* Controls */}
