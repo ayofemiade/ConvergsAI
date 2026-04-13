@@ -2,20 +2,22 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneOff, Send, User, Bot, Loader2, Sparkles, Mic, Volume2, CheckCircle2, X, ChevronRight, Wifi, Battery, SignalHigh, Globe } from 'lucide-react';
-import { apiClient, MessageResponse } from '@/lib/api';
+import {
+    Phone, PhoneOff, Send, Bot, Sparkles,
+    CheckCircle2, Wifi, SignalHigh, Globe
+} from 'lucide-react';
+import { apiClient } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
 import {
     Room,
     RoomEvent,
     Track,
-    RemoteParticipant,
     RemoteTrack,
-    RemoteTrackPublication,
     Participant,
-    DataPacket_Kind
 } from 'livekit-client';
 import '@livekit/components-styles';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type CallState = 'idle' | 'ringing' | 'connected' | 'ended';
 type AgentState = 'idle' | 'listening' | 'thinking' | 'speaking';
@@ -34,186 +36,199 @@ interface PhoneCallUIProps {
     persona?: string;
 }
 
-// --- OPTIMIZED SUB-COMPONENTS ---
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-const BackgroundAura = React.memo(() => (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-            animate={{
-                scale: [1, 1.1, 1],
-                opacity: [0.07, 0.12, 0.07],
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500 blur-[80px] rounded-full will-change-transform"
-        />
-        <motion.div
-            animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.04, 0.08, 0.04],
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear", delay: 2 }}
-            className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500 blur-[60px] rounded-full will-change-transform"
-        />
-    </div>
-));
-BackgroundAura.displayName = 'BackgroundAura';
-
-const StatusStatusBar = React.memo(() => (
-    <div className="h-14 flex items-center justify-between px-6 sm:px-10 z-40 text-white/95 relative">
-        {/* Time */}
-        <span className="flex text-[11px] sm:text-[12px] font-black tracking-tighter items-center gap-1.5">
+/** iOS-style status bar */
+const StatusBar = React.memo(() => (
+    <div className="shrink-0 h-12 flex items-center justify-between px-6 text-white/90 relative z-30">
+        <span className="text-[11px] font-black tracking-tighter flex items-center gap-1.5">
             9:41
-            <motion.div
+            <motion.span
                 animate={{ opacity: [1, 0, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-1.5 h-1.5 rounded-full bg-blue-500"
+                className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"
             />
         </span>
-
-        {/* Dynamic Island sibling space (centered) */}
         <div className="flex-1" />
-
-        {/* Battery/Signal */}
-        <div className="flex items-center gap-2.5 opacity-70 scale-90 sm:scale-100">
-            <SignalHigh size={14} strokeWidth={2.5} />
-            <Wifi size={14} strokeWidth={2.5} />
-            <div className="flex items-center gap-1">
-                <div className="w-[20px] h-[10px] sm:w-[22px] sm:h-[11px] rounded-[3.5px] border border-white/30 p-[1.5px] flex items-center relative">
-                    <div className="h-full w-[88%] bg-white rounded-[1.5px]" />
+        <div className="flex items-center gap-2 opacity-60">
+            <SignalHigh size={13} strokeWidth={2.5} />
+            <Wifi size={13} strokeWidth={2.5} />
+            <div className="flex items-center gap-0.5">
+                <div className="w-[18px] h-[9px] rounded-[3px] border border-white/40 p-[1.5px] flex items-center">
+                    <div className="h-full w-[85%] bg-white rounded-[1px]" />
                 </div>
-                <div className="w-[2px] h-[4px] bg-white/30 rounded-r-full" />
+                <div className="w-[2px] h-[4px] bg-white/40 rounded-r-full" />
             </div>
         </div>
     </div>
 ));
-StatusStatusBar.displayName = 'StatusStatusBar';
+StatusBar.displayName = 'StatusBar';
 
+/** Dynamic Island pill */
+const DynamicIsland = React.memo(({ callState, agentState }: { callState: CallState; agentState: AgentState }) => (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50">
+        <motion.div
+            layout
+            animate={{
+                width: agentState === 'speaking' ? 200 : agentState === 'thinking' ? 160 : callState === 'connected' ? 110 : 140,
+                height: 34,
+            }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className="bg-black border border-white/15 shadow-2xl rounded-full flex items-center justify-center gap-2.5 px-4 overflow-hidden"
+        >
+            <AnimatePresence mode="wait">
+                {callState === 'connected' ? (
+                    <motion.div
+                        key={agentState}
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        className="flex items-center gap-2 whitespace-nowrap"
+                    >
+                        {agentState === 'speaking' && (
+                            <>
+                                <div className="flex gap-[2px] h-3 items-center">
+                                    {[0.1, 0.35, 0.2, 0.45, 0.25].map((d, i) => (
+                                        <motion.div
+                                            key={i}
+                                            animate={{ height: [2, 12, 2] }}
+                                            transition={{ duration: 0.55, repeat: Infinity, delay: d }}
+                                            className="w-[2px] bg-green-400 rounded-full"
+                                        />
+                                    ))}
+                                </div>
+                                <span className="text-[9px] font-black text-white uppercase tracking-widest">Emma Speaking</span>
+                            </>
+                        )}
+                        {agentState === 'thinking' && (
+                            <>
+                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
+                                    <Sparkles size={11} className="text-purple-400" />
+                                </motion.div>
+                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-wider">Analyzing</span>
+                            </>
+                        )}
+                        {agentState === 'listening' && (
+                            <>
+                                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(96,165,250,0.8)]" />
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Agent</span>
+                            </>
+                        )}
+                    </motion.div>
+                ) : (
+                    <motion.div key="idle" className="flex items-center gap-2 opacity-70">
+                        <Globe size={10} className="text-white" />
+                        <span className="text-[9px] font-black text-white uppercase tracking-[0.4em]">ConvergsAI</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    </div>
+));
+DynamicIsland.displayName = 'DynamicIsland';
+
+/** Single message bubble */
 const MessageBubble = React.memo(({ msg }: { msg: Message }) => (
-    <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.2 }}
+        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+    >
         <div className={`
-            max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13.5px] font-medium leading-[1.4]
+            max-w-[82%] px-4 py-3 rounded-[18px] text-[13px] font-medium leading-[1.45] shadow-sm
             ${msg.role === 'user'
-                ? 'bg-[#1E1E1E] text-white rounded-br-none border border-white/5'
-                : 'bg-white/5 text-slate-100 rounded-bl-none border border-white/10 backdrop-blur-md'}
+                ? 'bg-blue-600 text-white rounded-br-[4px]'
+                : 'bg-white/8 text-slate-100 rounded-bl-[4px] border border-white/10 backdrop-blur-sm'
+            }
         `}>
             {msg.content}
         </div>
-    </div>
+    </motion.div>
 ));
 MessageBubble.displayName = 'MessageBubble';
 
-const QualificationItem = React.memo(({ item, val, isDone }: { item: any; val: any; isDone: boolean }) => (
-    <motion.div
-        initial={false}
-        animate={{ backgroundColor: isDone ? 'rgba(34, 197, 94, 0.05)' : 'transparent' }}
-        className={`p-4 rounded-2xl border transition-all duration-500 ${isDone ? 'border-green-500/30' : 'border-white/5 bg-white/[0.02]'} will-change-transform`}
-    >
-        <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2.5 text-xs font-bold text-slate-300">
-                <span className="opacity-50 grayscale">{item.icon}</span> {item.label}
-            </div>
-            {isDone && (
-                <div className="text-green-500">
-                    <CheckCircle2 size={14} />
-                </div>
-            )}
-        </div>
-        <div className="text-[11px] pl-7">
-            {isDone ? (
-                <span className="text-white font-medium capitalize">{val}</span>
-            ) : (
-                <span className="text-slate-600 italic">Listening...</span>
-            )}
-        </div>
-    </motion.div>
+/** Ambient glow behind chat */
+const ChatAura = React.memo(() => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+            animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05] }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+            className="absolute top-[-20%] right-[-10%] w-[55%] h-[55%] bg-blue-500 blur-[70px] rounded-full"
+        />
+        <motion.div
+            animate={{ scale: [1, 1.15, 1], opacity: [0.03, 0.07, 0.03] }}
+            transition={{ duration: 22, repeat: Infinity, ease: 'linear', delay: 3 }}
+            className="absolute bottom-[-10%] left-[-15%] w-[50%] h-[50%] bg-indigo-600 blur-[60px] rounded-full"
+        />
+    </div>
 ));
-QualificationItem.displayName = 'QualificationItem';
+ChatAura.displayName = 'ChatAura';
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function PhoneCallUI({
     initialPrompt,
     onCallStart,
     mode = 'sales',
-    persona = 'Emma'
+    persona = 'Emma',
 }: PhoneCallUIProps = {}) {
-    // State
+
     const [callState, setCallState] = useState<CallState>('idle');
     const [agentState, setAgentState] = useState<AgentState>('idle');
-    const [sessionId, setSessionId] = useState<string>('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [qualification, setQualification] = useState<any>({});
-    const [qualificationComplete, setQualificationComplete] = useState(false);
     const [liveTranscript, setLiveTranscript] = useState<{ text: string; role: 'user' | 'assistant' } | null>(null);
-    const [stats, setStats] = useState({ latency: '---', sentiment: 'Neutral' });
-    const liveTranscriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [showMobileStats, setShowMobileStats] = useState(false);
     const roomRef = useRef<Room | null>(null);
-    const audioRElementRef = useRef<HTMLAudioElement | null>(null);
+    const liveTranscriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Memoized state constants
-    const qualificationItems = React.useMemo(() => ({
-        sales: [
-            { key: 'business_type', label: 'Business Type', icon: '🏢' },
-            { key: 'goal', label: 'Primary Goal', icon: '🎯' },
-            { key: 'urgency', label: 'Timeline', icon: '⏱️' },
-            { key: 'budget_readiness', label: 'Budget Status', icon: '💰' },
-        ],
-        support: [
-            { key: 'issue_type', label: 'Issue Type', icon: '⚠️' },
-            { key: 'account_status', label: 'Account Status', icon: '👤' },
-            { key: 'frustration_level', label: 'Emotion', icon: '🔥' },
-            { key: 'resolution_path', label: 'Resolution', icon: '✅' },
-        ]
-    }), []);
-
-    // Automated scroll management - Enhanced with explicit scroll-to-bottom effect
+    // ── Scroll to bottom whenever messages or transcript change ──────────────
+    // With flex-col-reverse, scrollTop=0 IS the bottom. Force it every update.
     useEffect(() => {
         if (scrollRef.current) {
-            // In flex-col-reverse, scrollTop = 0 is already the bottom.
-            // But for absolute certainty across all engines:
             scrollRef.current.scrollTop = 0;
         }
     }, [messages, liveTranscript]);
 
-    // Runtime config check
-    useEffect(() => {
-        console.log("DEBUG: PhoneCallUI Initialized");
-        console.log("DEBUG: Target API Gateway:", process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
+    // ── Cleanup on unmount ───────────────────────────────────────────────────
+    const cleanup = React.useCallback(() => {
+        if (roomRef.current) {
+            roomRef.current.disconnect();
+            roomRef.current = null;
+        }
+        if (liveTranscriptTimeoutRef.current) {
+            clearTimeout(liveTranscriptTimeoutRef.current);
+        }
     }, []);
 
-    // Start call logic
+    useEffect(() => () => cleanup(), [cleanup]);
+
+    // ── Start Call ───────────────────────────────────────────────────────────
     const startCall = React.useCallback(async () => {
         setCallState('ringing');
         try {
             if (onCallStart) onCallStart();
 
             const { session_id } = await apiClient.createSession(initialPrompt);
-            setSessionId(session_id);
-
             const { token, serverUrl } = await apiClient.getLiveKitToken(session_id);
 
-            const room = new Room({
-                adaptiveStream: true,
-                dynacast: true,
-                publishDefaults: {
-                    dtx: true, // Enable DTX for better bandwidth/CPU usage
-                }
-            });
+            const room = new Room({ adaptiveStream: true, dynacast: true });
             roomRef.current = room;
 
             room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
                 if (track.kind === Track.Kind.Audio) {
-                    const element = track.attach();
-                    document.body.appendChild(element);
+                    const el = track.attach();
+                    document.body.appendChild(el);
                     setAgentState('speaking');
                 }
             });
 
             room.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
-                const isAgentSpeaking = speakers.some(p => p.identity.includes('agent') || (p as any).isAgent);
-                setAgentState(isAgentSpeaking ? 'speaking' : 'listening');
+                const agentSpeaking = speakers.some(p => p.identity.includes('agent') || (p as any).isAgent);
+                setAgentState(agentSpeaking ? 'speaking' : 'listening');
             });
 
             room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
@@ -222,7 +237,6 @@ export default function PhoneCallUI({
                     const data = JSON.parse(str);
                     if (data.type === 'transcript' || data.type === 'text') {
                         const isFinal = data.is_final !== false;
-
                         if (isFinal) {
                             setMessages(prev => [...prev, {
                                 id: uuidv4(),
@@ -232,33 +246,15 @@ export default function PhoneCallUI({
                             }]);
                             setLiveTranscript(null);
                         } else {
-                            setLiveTranscript({
-                                text: data.content || data.text,
-                                role: data.role || 'assistant'
-                            });
-
+                            setLiveTranscript({ text: data.content || data.text, role: data.role || 'assistant' });
                             if (liveTranscriptTimeoutRef.current) clearTimeout(liveTranscriptTimeoutRef.current);
-                            liveTranscriptTimeoutRef.current = setTimeout(() => {
-                                setLiveTranscript(null);
-                            }, 3000);
+                            liveTranscriptTimeoutRef.current = setTimeout(() => setLiveTranscript(null), 3000);
                         }
                     }
-                    if (data.qualification) setQualification(data.qualification);
-                    if (data.qualification_complete !== undefined) setQualificationComplete(data.qualification_complete);
-
-                    if (data.intelligence) {
-                        setStats(prev => ({
-                            latency: data.intelligence.latency ? `${data.intelligence.latency}ms` : prev.latency,
-                            sentiment: data.intelligence.sentiment || prev.sentiment
-                        }));
-                    }
-                } catch (e) { }
+                } catch (_) { /* ignore parse errors */ }
             });
 
-            room.on(RoomEvent.Disconnected, () => {
-                setCallState('ended');
-                cleanup();
-            });
+            room.on(RoomEvent.Disconnected, () => { setCallState('ended'); cleanup(); });
 
             await room.connect(serverUrl, token);
             await room.localParticipant.setMicrophoneEnabled(true);
@@ -266,470 +262,302 @@ export default function PhoneCallUI({
             setCallState('connected');
             setAgentState('listening');
 
-            const encoder = new TextEncoder();
-            const metaPacket = encoder.encode(JSON.stringify({
-                type: 'metadata',
-                mode,
-                persona,
-                prompt: initialPrompt
-            }));
-            await room.localParticipant.publishData(metaPacket, { reliable: true });
-
-        } catch (error) {
-            console.error('LiveKit fail:', error);
+            // Send session metadata
+            const enc = new TextEncoder();
+            await room.localParticipant.publishData(
+                enc.encode(JSON.stringify({ type: 'metadata', mode, persona, prompt: initialPrompt })),
+                { reliable: true }
+            );
+        } catch (err) {
+            console.error('Call failed:', err);
             setCallState('idle');
         }
-    }, [initialPrompt, mode, persona, onCallStart]);
+    }, [initialPrompt, mode, persona, onCallStart, cleanup]);
 
-    const cleanup = React.useCallback(() => {
-        if (roomRef.current) {
-            roomRef.current.disconnect();
-            roomRef.current = null;
-        }
-    }, []);
-
-    const endCall = React.useCallback(() => {
-        cleanup();
-        setCallState('ended');
-    }, [cleanup]);
+    const endCall = React.useCallback(() => { cleanup(); setCallState('ended'); }, [cleanup]);
 
     const resetCall = React.useCallback(() => {
         setCallState('idle');
         setMessages([]);
-        setQualification({});
-        setQualificationComplete(false);
         setAgentState('idle');
-        setStats({ latency: '---', sentiment: 'Neutral' });
         setLiveTranscript(null);
         setInputText('');
     }, []);
 
-    // Keep memory of cleanup on unmount
-    useEffect(() => {
-        return () => cleanup();
-    }, []);
-
     const sendMessage = React.useCallback(async () => {
         if (!inputText.trim() || !roomRef.current) return;
-
-        const content = inputText;
+        const content = inputText.trim();
         setInputText('');
-
-        setMessages((prev) => [...prev, {
-            id: uuidv4(),
-            role: 'user',
-            content,
-            timestamp: new Date(),
-        }]);
-
-        const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify({
-            type: 'chat',
-            content,
-            role: 'user'
-        }));
-
+        setMessages(prev => [...prev, { id: uuidv4(), role: 'user', content, timestamp: new Date() }]);
         try {
-            await roomRef.current.localParticipant.publishData(data, {
-                reliable: true
-            });
-        } catch (err) { }
+            const enc = new TextEncoder();
+            await roomRef.current.localParticipant.publishData(
+                enc.encode(JSON.stringify({ type: 'chat', content, role: 'user' })),
+                { reliable: true }
+            );
+        } catch (_) { /* ignore */ }
     }, [inputText]);
 
     const handleKeyPress = React.useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     }, [sendMessage]);
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDER
+    // The component fills its parent 100%×100% (the phone shell in page.tsx).
+    // Layout: StatusBar (shrink-0) → DynamicIsland (absolute) → Content (flex-1)
+    // Content area switches between idle / ringing / connected / ended screens.
+    // ─────────────────────────────────────────────────────────────────────────
+
     return (
-        <div className="w-full h-full flex items-center justify-center p-2 lg:p-4 overflow-hidden overscroll-none bg-black/20">
+        <div className="w-full h-full bg-[#050510] flex flex-col overflow-hidden">
 
-            {/* PHONE INTERFACE */}
-            <div className="h-full flex items-center justify-center relative w-full">
+            {/* ── Status Bar ── */}
+            <StatusBar />
 
-                {/* Phone Body Shell - Realistic Depth */}
-                <div className="relative max-h-full h-full aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto transition-all">
+            {/* ── Dynamic Island (absolute so it floats over content) ── */}
+            <DynamicIsland callState={callState} agentState={agentState} />
 
-                    {/* Screen Reflection Overlay (Glass Effect) */}
-                    <div className="absolute inset-0 z-50 pointer-events-none">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white opacity-[0.02] via-transparent to-transparent" />
-                        <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-white/[0.05] to-transparent" />
-                    </div>
+            {/* ── Main Screen area ── */}
+            <div className="flex-1 min-h-0 relative">
+                <AnimatePresence mode="wait">
 
-                    {/* Interior Screen Boundary (The Display) */}
-                    <div className="relative flex-1 bg-black rounded-[2.8rem] overflow-hidden flex flex-col ring-1 ring-white/10 shadow-[inset_0_0_80px_rgba(0,0,0,0.9)]">
-
-                        {/* MOCK STATUS BAR (iOS Style) */}
-                        <StatusStatusBar />
-
-                        {/* DYNAMIC ISLAND HUB (Interactive) */}
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50">
-                            <motion.div
-                                layout
-                                animate={{
-                                    width: agentState === 'speaking' ? 240 :
-                                        agentState === 'thinking' ? 180 :
-                                            callState === 'connected' ? 120 : 160,
-                                    height: 36,
-                                }}
-                                transition={{ type: "spring", stiffness: 450, damping: 28 }}
-                                className="bg-black border border-white/20 shadow-2xl rounded-full flex items-center justify-center gap-3 px-5 shrink-0 overflow-hidden will-change-transform"
-                            >
-                                <AnimatePresence mode="wait">
-                                    {callState === 'connected' ? (
-                                        <motion.div
-                                            key={agentState}
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.8 }}
-                                            className="flex items-center gap-2 whitespace-nowrap"
-                                        >
-                                            {agentState === 'speaking' && (
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex gap-[2px] h-3.5 items-center">
-                                                        {[0.1, 0.4, 0.2, 0.5, 0.3, 0.45, 0.25].map((delay, i) => (
-                                                            <motion.div
-                                                                key={i}
-                                                                animate={{ height: [3, 14, 3] }}
-                                                                transition={{ duration: 0.6, repeat: Infinity, delay }}
-                                                                className="w-[2px] bg-green-500 rounded-full"
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <span className="text-[10px] font-black text-white uppercase tracking-[0.15em] glow-text">Emma Speaking</span>
-                                                </div>
-                                            )}
-                                            {agentState === 'thinking' && (
-                                                <div className="flex items-center gap-2.5">
-                                                    <motion.div
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                                                    >
-                                                        <Sparkles size={12} className="text-purple-400" />
-                                                    </motion.div>
-                                                    <span className="text-[10px] font-black text-slate-200 uppercase tracking-tighter">System Analyzing</span>
-                                                </div>
-                                            )}
-                                            {agentState === 'listening' && (
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.8)]" />
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">LIVE AGENT</span>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div
-                                            key="idle"
-                                            className="flex items-center gap-2.5 opacity-60 hover:opacity-100 transition-opacity"
-                                        >
-                                            <Globe size={11} className="text-white" />
-                                            <span className="text-[10px] font-black text-white uppercase tracking-[0.4em]">ConvergsAI</span>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </motion.div>
-                        </div>
-
-                        {/* Home Indicator (The sleek bar at bottom) */}
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-36 h-[5px] bg-white/25 rounded-full z-40 shadow-sm" />
-
-                        {/* Main Content Area */}
-                        <div className="flex-1 relative flex flex-col bg-black">
-                            <AnimatePresence mode="wait">
-                                {callState === 'idle' && (
-                                    <motion.div
-                                        className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-12"
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    >
-                                        <div className="relative group">
-                                            <div className="absolute inset-0 bg-blue-500/20 blur-[80px] rounded-full group-hover:bg-blue-400/30 transition-all duration-700" />
-                                            <motion.div
-                                                whileHover={{ scale: 1.05 }}
-                                                className="w-40 h-40 rounded-[3rem] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl relative z-10 p-1"
-                                            >
-                                                <div className="w-full h-full bg-slate-900 rounded-[2.8rem] flex items-center justify-center overflow-hidden">
-                                                    <Bot size={80} className="text-white" />
-                                                </div>
-                                            </motion.div>
-                                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-[10px] font-black text-black px-4 py-1 rounded-full border-4 border-slate-950 shadow-lg relative z-20">
-                                                SECURE LINE
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Emma</h2>
-                                            <p className="text-slate-400 font-medium text-sm max-w-[200px] leading-relaxed">
-                                                Secure, high-performance AI voice intelligence.
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={startCall}
-                                            className="w-full max-w-[240px] py-4 bg-white text-black rounded-3xl font-bold flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
-                                            aria-label="Call Emma"
-                                        >
-                                            <Phone size={20} fill="black" />
-                                            <span>Start Call</span>
-                                        </button>
-                                    </motion.div>
-                                )}
-
-                                {callState === 'ringing' && (
-                                    <motion.div
-                                        className="flex-1 flex flex-col items-center justify-between py-20 relative overflow-hidden"
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    >
-                                        <div className="absolute inset-0 z-0 pointer-events-none">
-                                            <motion.div
-                                                animate={{
-                                                    opacity: [0.15, 0.25, 0.15]
-                                                }}
-                                                transition={{ duration: 8, repeat: Infinity }}
-                                                className="absolute inset-0 bg-blue-600/10 blur-[100px]"
-                                            />
-                                        </div>
-
-                                        <div className="relative z-10 flex flex-col items-center gap-6">
-                                            <div className="relative">
-                                                <motion.div
-                                                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-                                                    transition={{ duration: 2, repeat: Infinity }}
-                                                    className="absolute -inset-4 rounded-full border border-blue-500/50"
-                                                />
-                                                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-500/40 relative z-10 p-1">
-                                                    <div className="w-full h-full bg-slate-900 rounded-full flex items-center justify-center overflow-hidden">
-                                                        <Bot size={56} className="text-blue-400" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-center">
-                                                <h2 className="text-2xl font-bold text-white mb-1">Emma</h2>
-                                                <p className="text-blue-400 text-sm font-bold uppercase tracking-[0.2em] animate-pulse">ConvergsAI Agent</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="relative z-10 flex flex-col items-center gap-4 w-full px-12">
-                                            <p className="text-slate-400 text-xs font-medium mb-8">Calling via ConvergsAI...</p>
-                                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: "0%" }}
-                                                    animate={{ width: "100%" }}
-                                                    transition={{ duration: 3 }}
-                                                    className="h-full bg-blue-500"
-                                                />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                {callState === 'connected' && (
-                                    <motion.div
-                                        className="flex-1 flex flex-col min-h-0 relative"
-                                        initial={{ opacity: 0 }} 
-                                        animate={{ opacity: 1 }}
-                                    >
-                                        {/* Phone Screen Background Elements */}
-                                        <BackgroundAura />
-                                        
-                                        {/* Message Area (WhatsApp Style Scroll) */}
-                                        <div
-                                            ref={scrollRef}
-                                            className="flex-1 overflow-y-auto p-6 flex flex-col-reverse gap-4 custom-scrollbar scroll-smooth pt-16 relative z-10"
-                                        >
-                                            {/* 1. Agent "Thinking" state - Appears at very bottom when active */}
-                                            {agentState === 'thinking' && (
-                                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
-                                                    <div className="bg-white/5 px-4 py-3 rounded-[20px] rounded-bl-none border border-white/10 flex gap-1.5 items-center">
-                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                                    </div>
-                                                </motion.div>
-                                            )}
-
-                                            {/* 2. Live Transcript - Integrated into the list so it pushes history up */}
-                                            <AnimatePresence>
-                                                {liveTranscript && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.95 }}
-                                                        className={`flex ${liveTranscript.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                                    >
-                                                        <div className={`
-                                                            max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13.5px] font-medium leading-[1.4] relative shadow-2xl
-                                                            ${liveTranscript.role === 'user'
-                                                                ? 'bg-blue-600 text-white rounded-br-none'
-                                                                : 'bg-white/10 text-slate-100 rounded-bl-none border border-white/10 backdrop-blur-md'}
-                                                        `}>
-                                                            <div className="flex items-center gap-2 mb-1 opacity-50 text-[10px] font-bold uppercase tracking-wider">
-                                                                {liveTranscript.role === 'user' ? 'You' : 'Emma'}
-                                                            </div>
-                                                            {liveTranscript.text}
-                                                            <motion.span
-                                                                animate={{ opacity: [1, 0.4, 1] }}
-                                                                transition={{ duration: 0.8, repeat: Infinity }}
-                                                                className="inline-block w-1 h-3.5 bg-current ml-1 align-middle"
-                                                            />
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-
-                                            {/* History - Reversed so index 0 is bottom */}
-                                            <AnimatePresence initial={false}>
-                                                {[...messages].reverse().map((msg) => (
-                                                    <MessageBubble key={msg.id} msg={msg} />
-                                                ))}
-                                            </AnimatePresence>
-                                            
-                                            {/* Top Spacer to allow scrolling up into history */}
-                                            <div className="h-20 shrink-0" />
-                                        </div>
-
-                                        {/* Controls */}
-                                        <div className="p-4 sm:p-6 bg-black/80 backdrop-blur-[30px] border-t border-white/5 relative z-20 pb-8 sm:pb-10">
-                                            <div className="flex gap-2 items-center">
-                                                <div className="flex-1 relative">
-                                                    <input
-                                                        type="text"
-                                                        value={inputText}
-                                                        onChange={(e) => setInputText(e.target.value)}
-                                                        onKeyPress={handleKeyPress}
-                                                        placeholder="Message Emma..."
-                                                        className="w-full bg-white/[0.03] border border-white/10 rounded-[20px] px-5 py-3.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20 placeholder:text-slate-600 transition-all font-medium"
-                                                    />
-                                                </div>
-                                                <button
-                                                    onClick={sendMessage}
-                                                    disabled={!inputText.trim() || isLoading}
-                                                    className="w-11 h-11 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 disabled:opacity-20 disabled:grayscale transition-all active:scale-95 shadow-xl shrink-0"
-                                                    aria-label="Send message"
-                                                >
-                                                    <Send size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={endCall}
-                                                    className="w-11 h-11 flex items-center justify-center bg-[#FF3B30] text-white rounded-full hover:scale-105 transition-all active:scale-95 shadow-xl shrink-0"
-                                                    aria-label="End call"
-                                                >
-                                                    <PhoneOff size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                {callState === 'ended' && (
-                                    <motion.div
-                                        className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6"
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                    >
-                                        <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center border border-white/10">
-                                            <CheckCircle2 size={32} className="text-green-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white mb-2">Demo Completed</h3>
-                                            <p className="text-slate-300 font-medium mb-4">
-                                                {mode === 'sales'
-                                                    ? 'Emma has collected the necessary details. Your agent is ready for a real sales call.'
-                                                    : 'Support session resolved. The agent successfully de-escalated and provided a solution.'}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col gap-2 w-full">
-                                            <button onClick={resetCall} className="btn-primary w-full py-4 rounded-xl">
-                                                {mode === 'sales' ? 'Book a Product Strategy Call' : 'Explore Support Automation'}
-                                            </button>
-                                            <button onClick={resetCall} className="text-slate-400 text-sm hover:text-white transition-colors">
-                                                Start New Call
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div> {/* Main Content Area */}
-                    </div> {/* Interior Screen Boundary */}
-                </div> {/* Phone Body Shell */}
-            </div> {/* Phone Interface Wrapper */}
-
-            {/* STATS & CONTEXT SIDEBAR */}
-            <div className={`
-                ${showMobileStats ? 'flex' : 'hidden'} 
-                lg:flex lg:w-80 flex-col gap-4 
-                fixed lg:relative inset-0 lg:inset-auto z-[100] lg:z-10
-                bg-slate-950/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none
-                p-6 lg:p-0 transition-all duration-300
-            `}>
-                <div className="flex lg:hidden items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold font-display">Session Intelligence</h2>
-                    <button onClick={() => setShowMobileStats(false)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
-                        <X size={24} className="text-slate-400" />
-                    </button>
-                </div>
-
-                {/* Agent Card */}
-                <div className="bg-slate-900/40 border border-white/10 rounded-3xl p-5 backdrop-blur-xl shadow-2xl">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold border border-blue-500/30">
-                            AI
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-sm text-white uppercase tracking-widest">
-                                {mode === 'sales' ? 'Sales Intelligence' : 'Support Intelligence'}
-                            </h2>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/[0.03] p-3 rounded-2xl border border-white/5">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Latency</div>
-                            <div className="text-green-400 font-mono text-xs">{stats.latency}</div>
-                        </div>
-                        <div className="bg-white/[0.03] p-3 rounded-2xl border border-white/5">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Sentiment</div>
-                            <div className={`font-mono text-xs ${stats.sentiment.toLowerCase() === 'positive' ? 'text-green-400' :
-                                stats.sentiment.toLowerCase() === 'negative' ? 'text-red-400' :
-                                    'text-blue-400'
-                                }`}>
-                                {stats.sentiment}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Qualification Tracker */}
-                <div className="flex-1 bg-slate-900/40 border border-white/10 rounded-3xl p-6 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden">
-                    <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-6">Extracted Metadata</h2>
-
-                    <div className="space-y-4 flex-1">
-                        {qualificationItems[mode].map((item: any) => (
-                            <QualificationItem
-                                key={item.key}
-                                item={item}
-                                val={qualification[item.key]}
-                                isDone={!!qualification[item.key]}
-                            />
-                        ))}
-                    </div>
-
-                    {qualificationComplete && (
+                    {/* ────── IDLE SCREEN ────── */}
+                    {callState === 'idle' && (
                         <motion.div
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-2xl flex items-center gap-4"
+                            key="idle"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-8 px-6 text-center"
                         >
-                            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-                                <CheckCircle2 size={18} className="text-black" />
+                            {/* Ambient glow */}
+                            <div className="absolute inset-0 pointer-events-none">
+                                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-48 h-48 bg-blue-600/20 blur-[80px] rounded-full" />
                             </div>
-                            <div>
-                                <div className="text-xs font-black text-green-400 uppercase tracking-widest">Metadata Sync</div>
-                                <div className="text-[11px] text-green-300/50">Qualification Pipeline Complete</div>
+
+                            {/* Avatar */}
+                            <div className="relative z-10">
+                                <motion.div
+                                    whileHover={{ scale: 1.04 }}
+                                    className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-blue-500 to-indigo-600 p-1 shadow-2xl shadow-blue-600/40"
+                                >
+                                    <div className="w-full h-full bg-slate-950 rounded-[2.2rem] flex items-center justify-center">
+                                        <Bot size={60} className="text-white" />
+                                    </div>
+                                </motion.div>
+                                <div className="absolute -bottom-1 -right-1 bg-green-400 text-[9px] font-black text-black px-3 py-0.5 rounded-full border-2 border-slate-950 shadow">
+                                    SECURE LINE
+                                </div>
+                            </div>
+
+                            <div className="relative z-10">
+                                <h2 className="text-3xl font-black text-white mb-1.5 tracking-tight">Emma</h2>
+                                <p className="text-slate-400 text-sm max-w-[200px] leading-relaxed font-medium">
+                                    AI voice intelligence. Ready when you are.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={startCall}
+                                className="relative z-10 flex items-center gap-3 bg-white text-black px-8 py-4 rounded-3xl font-bold text-sm hover:scale-[1.03] active:scale-[0.97] transition-all shadow-2xl"
+                                aria-label="Start call with Emma"
+                            >
+                                <Phone size={18} fill="black" />
+                                Start Call
+                            </button>
+                        </motion.div>
+                    )}
+
+                    {/* ────── RINGING SCREEN ────── */}
+                    {callState === 'ringing' && (
+                        <motion.div
+                            key="ringing"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-8"
+                        >
+                            <div className="absolute inset-0 pointer-events-none">
+                                <motion.div
+                                    animate={{ opacity: [0.1, 0.2, 0.1] }}
+                                    transition={{ duration: 6, repeat: Infinity }}
+                                    className="absolute inset-0 bg-blue-600/10 blur-[80px]"
+                                />
+                            </div>
+
+                            <div className="relative z-10">
+                                <motion.div
+                                    animate={{ scale: [1, 1.18, 1], opacity: [0.4, 0, 0.4] }}
+                                    transition={{ duration: 1.8, repeat: Infinity }}
+                                    className="absolute -inset-5 rounded-full border border-blue-500/40"
+                                />
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 p-1 shadow-2xl shadow-blue-500/30">
+                                    <div className="w-full h-full bg-slate-950 rounded-full flex items-center justify-center">
+                                        <Bot size={46} className="text-blue-300" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="relative z-10 text-center">
+                                <h2 className="text-2xl font-bold text-white mb-1">Emma</h2>
+                                <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.2em] animate-pulse">Connecting...</p>
+                            </div>
+
+                            <div className="relative z-10 w-full">
+                                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: '0%' }} animate={{ width: '100%' }}
+                                        transition={{ duration: 3 }}
+                                        className="h-full bg-blue-500 rounded-full"
+                                    />
+                                </div>
                             </div>
                         </motion.div>
                     )}
-                </div>
+
+                    {/* ────── CONNECTED SCREEN ────── */}
+                    {callState === 'connected' && (
+                        <motion.div
+                            key="connected"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            // This must be a flex column filling the parent:
+                            // [message list - flex-1 scrollable] + [controls - pinned at bottom]
+                            className="absolute inset-0 flex flex-col"
+                        >
+                            {/* Ambient aura behind messages */}
+                            <ChatAura />
+
+                            {/* ── "Thinking" dots (agent deliberating) ── */}
+                            <AnimatePresence>
+                                {agentState === 'thinking' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 bg-white/5 border border-white/10 backdrop-blur-md px-4 py-2 rounded-full"
+                                    >
+                                        {[0, 150, 300].map(delay => (
+                                            <span
+                                                key={delay}
+                                                className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+                                                style={{ animationDelay: `${delay}ms` }}
+                                            />
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/*
+                                ── MESSAGE SCROLL AREA ──
+                                flex-col-reverse: newest messages render at the bottom.
+                                As new messages are added (prepended in the reversed order),
+                                old messages naturally push upwards.
+                                scrollTop=0 is always the bottom in a reversed container.
+                            */}
+                            <div
+                                ref={scrollRef}
+                                className="flex-1 min-h-0 overflow-y-auto flex flex-col-reverse gap-2.5 px-4 pt-4 pb-2 relative z-10 custom-scrollbar"
+                            >
+                                {/* Live transcript (appears at very bottom of list = top in DOM order) */}
+                                <AnimatePresence>
+                                    {liveTranscript && (
+                                        <motion.div
+                                            key="live"
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            className={`flex ${liveTranscript.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            <div className={`
+                                                max-w-[82%] px-4 py-3 rounded-[18px] text-[13px] font-medium leading-[1.45]
+                                                ${liveTranscript.role === 'user'
+                                                    ? 'bg-blue-600/80 text-white rounded-br-[4px]'
+                                                    : 'bg-white/6 text-slate-200 rounded-bl-[4px] border border-white/10'
+                                                }
+                                            `}>
+                                                {liveTranscript.text}
+                                                <motion.span
+                                                    animate={{ opacity: [1, 0.3, 1] }}
+                                                    transition={{ duration: 0.7, repeat: Infinity }}
+                                                    className="inline-block w-0.5 h-3.5 bg-current ml-1 align-middle rounded-full"
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Committed messages — newest first in DOM, reversed by CSS */}
+                                {[...messages].reverse().map(msg => (
+                                    <MessageBubble key={msg.id} msg={msg} />
+                                ))}
+                            </div>
+
+                            {/*
+                                ── CONTROLS (pinned footer) ──
+                                shrink-0 ensures it never gets squashed by the message area.
+                                z-20 keeps it above scroll content.
+                            */}
+                            <div className="shrink-0 z-20 bg-black/70 backdrop-blur-2xl border-t border-white/5 px-3 py-3 pb-7">
+                                <div className="flex gap-2 items-center">
+                                    <input
+                                        type="text"
+                                        value={inputText}
+                                        onChange={e => setInputText(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        placeholder="Message Emma..."
+                                        className="flex-1 min-w-0 bg-white/4 border border-white/10 rounded-2xl px-4 py-3 text-[13px] text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 placeholder:text-slate-600 font-medium transition-all"
+                                    />
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!inputText.trim()}
+                                        aria-label="Send message"
+                                        className="w-11 h-11 shrink-0 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 disabled:opacity-20 transition-all active:scale-95 shadow-lg"
+                                    >
+                                        <Send size={16} />
+                                    </button>
+                                    <button
+                                        onClick={endCall}
+                                        aria-label="End call"
+                                        className="w-11 h-11 shrink-0 flex items-center justify-center bg-red-500 text-white rounded-full hover:scale-105 transition-all active:scale-95 shadow-lg"
+                                    >
+                                        <PhoneOff size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* ────── ENDED SCREEN ────── */}
+                    {callState === 'ended' && (
+                        <motion.div
+                            key="ended"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            className="absolute inset-0 flex flex-col items-center justify-center text-center gap-6 px-8"
+                        >
+                            <div className="w-20 h-20 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center">
+                                <CheckCircle2 size={36} className="text-green-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-2">Demo Completed</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed">
+                                    {mode === 'sales'
+                                        ? 'Emma has collected the necessary details. Your agent is ready.'
+                                        : 'Support session resolved. The agent de-escalated successfully.'}
+                                </p>
+                            </div>
+                            <div className="flex flex-col gap-3 w-full">
+                                <button
+                                    onClick={resetCall}
+                                    className="w-full py-3.5 bg-white text-black rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+                                >
+                                    {mode === 'sales' ? 'Book a Strategy Call' : 'Start New Session'}
+                                </button>
+                                <button onClick={resetCall} className="text-slate-500 text-xs hover:text-white transition-colors py-1">
+                                    Try Again
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                </AnimatePresence>
             </div>
         </div>
     );
 }
-
-
