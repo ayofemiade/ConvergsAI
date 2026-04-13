@@ -342,13 +342,13 @@ export default function PhoneCallUI({
     }, [sendMessage]);
 
     return (
-        <div className="w-full min-h-screen lg:h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-2 lg:p-6 items-center lg:items-start justify-center overflow-hidden">
+        <div className="w-full h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-2 lg:p-6 items-center lg:items-start justify-center overflow-hidden overscroll-none">
 
             {/* PHONE INTERFACE */}
-            <div className="flex-1 relative group max-w-[420px] mx-auto lg:max-w-none w-full">
+            <div className="flex-1 h-full max-h-full relative group max-w-[420px] mx-auto lg:max-w-none w-full overflow-hidden">
 
                 {/* Phone Body Shell - Realistic Depth */}
-                <div className="relative h-[92dvh] lg:h-[clamp(600px,85vh,880px)] aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto">
+                <div className="relative h-full max-h-[min(92vh,850px)] aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto transition-all">
 
                     {/* Screen Reflection Overlay (Glass Effect) */}
                     <div className="absolute inset-0 z-50 pointer-events-none">
