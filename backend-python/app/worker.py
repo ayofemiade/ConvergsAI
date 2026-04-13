@@ -45,7 +45,8 @@ async def entrypoint(ctx: JobContext):
     agent_llm = openai.LLM(
         model="llama3.1-8b",
         base_url="https://api.cerebras.ai/v1",
-        api_key=os.environ.get("CEREBRAS_API_KEY")
+        api_key=os.environ.get("CEREBRAS_API_KEY"),
+        temperature=0.5
     )
     
     tts =  deepgram.TTS( model="aura-2-odysseus-en")
@@ -142,8 +143,9 @@ async def entrypoint(ctx: JobContext):
             if payload.get("type") == "metadata":
                 new_prompt = payload.get("prompt")
                 if new_prompt:
-                    logger.info(f"[Worker] Syncing persona instructions...")
-                    asyncio.create_task(emma_agent.update_instructions(new_prompt))
+                    logger.info(f"[Worker] Syncing persona blocked (Disabled manual update)")
+                    
+                    # asyncio.create_task(emma_agent.update_instructions(new_prompt))
         except Exception:
             pass
 
