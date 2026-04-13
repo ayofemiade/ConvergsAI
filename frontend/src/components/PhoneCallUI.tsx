@@ -59,9 +59,9 @@ const BackgroundAura = React.memo(() => (
 BackgroundAura.displayName = 'BackgroundAura';
 
 const StatusStatusBar = React.memo(() => (
-    <div className="h-14 flex items-center justify-between px-10 z-40 text-white/95 relative">
-        {/* Time - Hidden on small screens */}
-        <span className="hidden lg:flex text-[12px] font-black tracking-tighter items-center gap-1.5">
+    <div className="h-14 flex items-center justify-between px-6 sm:px-10 z-40 text-white/95 relative">
+        {/* Time */}
+        <span className="flex text-[11px] sm:text-[12px] font-black tracking-tighter items-center gap-1.5">
             9:41
             <motion.div
                 animate={{ opacity: [1, 0, 1] }}
@@ -73,12 +73,12 @@ const StatusStatusBar = React.memo(() => (
         {/* Dynamic Island sibling space (centered) */}
         <div className="flex-1" />
 
-        {/* Battery/Signal - Hidden on small screens */}
-        <div className="hidden lg:flex items-center gap-2.5 opacity-70">
+        {/* Battery/Signal */}
+        <div className="flex items-center gap-2.5 opacity-70 scale-90 sm:scale-100">
             <SignalHigh size={14} strokeWidth={2.5} />
             <Wifi size={14} strokeWidth={2.5} />
             <div className="flex items-center gap-1">
-                <div className="w-[22px] h-[11px] rounded-[3.5px] border border-white/30 p-[1.5px] flex items-center relative">
+                <div className="w-[20px] h-[10px] sm:w-[22px] sm:h-[11px] rounded-[3.5px] border border-white/30 p-[1.5px] flex items-center relative">
                     <div className="h-full w-[88%] bg-white rounded-[1.5px]" />
                 </div>
                 <div className="w-[2px] h-[4px] bg-white/30 rounded-r-full" />
@@ -168,12 +168,8 @@ export default function PhoneCallUI({
         ]
     }), []);
 
-    // Auto-scroll to bottom of transcript
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages, agentState]);
+    // Automated scroll management is now handled by flex-col-reverse CSS layout
+    // for a superior 'WhatsApp-style' performance and feel.
 
     // Runtime config check
     useEffect(() => {
@@ -342,13 +338,13 @@ export default function PhoneCallUI({
     }, [sendMessage]);
 
     return (
-        <div className="w-full h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-2 lg:p-6 items-center lg:items-start justify-center overflow-hidden overscroll-none">
+        <div className="w-full h-full min-h-[500px] lg:h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-2 lg:p-6 items-center lg:items-start justify-center overflow-hidden overscroll-none">
 
             {/* PHONE INTERFACE */}
             <div className="flex-1 h-full max-h-full relative group max-w-[420px] mx-auto lg:max-w-none w-full overflow-hidden">
 
                 {/* Phone Body Shell - Realistic Depth */}
-                <div className="relative h-full max-h-[min(92vh,850px)] aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto transition-all">
+                <div className="relative h-full w-full max-w-[400px] lg:max-w-none aspect-[9/19.2] bg-[#080808] rounded-[3.2rem] p-[10px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_2px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden flex flex-col ring-8 ring-slate-900/40 mx-auto transition-all">
 
                     {/* Screen Reflection Overlay (Glass Effect) */}
                     <div className="absolute inset-0 z-50 pointer-events-none">
@@ -522,63 +518,68 @@ export default function PhoneCallUI({
 
                                 {callState === 'connected' && (
                                     <motion.div
-                                        className="flex-1 flex flex-col h-full relative"
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                        className="flex-1 flex flex-col min-h-0 relative"
+                                        initial={{ opacity: 0 }} 
+                                        animate={{ opacity: 1 }}
                                     >
-                                        {/* Real-time Transcription Overlay */}
-                                        <AnimatePresence>
-                                            {liveTranscript && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0 }}
-                                                    className="absolute bottom-24 left-4 right-4 z-30 pointer-events-none"
-                                                >
-                                                    <div className={`
-                                                    p-4 rounded-2xl backdrop-blur-md border shadow-xl max-w-[90%] mx-auto
-                                                    ${liveTranscript.role === 'user'
-                                                            ? 'bg-blue-600/80 border-blue-400/30'
-                                                            : 'bg-slate-800/80 border-white/10'}
-                                                `}>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            {liveTranscript.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-                                                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
-                                                                {liveTranscript.role === 'user' ? 'You' : 'Emma'} is speaking...
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-sm font-medium leading-relaxed italic">
-                                                            "{liveTranscript.text}"
-                                                        </p>
+                                        {/* Phone Screen Background Elements */}
+                                        <BackgroundAura />
+                                        
+                                        {/* Message Area (WhatsApp Style Scroll) */}
+                                        <div
+                                            ref={scrollRef}
+                                            className="flex-1 overflow-y-auto p-6 flex flex-col-reverse gap-4 custom-scrollbar scroll-smooth pt-16 relative z-10"
+                                        >
+                                            {/* 1. Agent "Thinking" state - Appears at very bottom when active */}
+                                            {agentState === 'thinking' && (
+                                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                                                    <div className="bg-white/5 px-4 py-3 rounded-[20px] rounded-bl-none border border-white/10 flex gap-1.5 items-center">
+                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                                     </div>
                                                 </motion.div>
                                             )}
-                                        </AnimatePresence>
-                                        {/* Phone Screen Background Elements */}
-                                        <BackgroundAura />
 
-                                        {/* Live Transcript Area */}
-                                        <div
-                                            ref={scrollRef}
-                                            className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar scroll-smooth pt-16 relative z-10"
-                                        >
+                                            {/* 2. Live Transcript - Integrated into the list so it pushes history up */}
+                                            <AnimatePresence>
+                                                {liveTranscript && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.95 }}
+                                                        className={`flex ${liveTranscript.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                    >
+                                                        <div className={`
+                                                            max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13.5px] font-medium leading-[1.4] relative shadow-2xl
+                                                            ${liveTranscript.role === 'user'
+                                                                ? 'bg-blue-600 text-white rounded-br-none'
+                                                                : 'bg-white/10 text-slate-100 rounded-bl-none border border-white/10 backdrop-blur-md'}
+                                                        `}>
+                                                            <div className="flex items-center gap-2 mb-1 opacity-50 text-[10px] font-bold uppercase tracking-wider">
+                                                                {liveTranscript.role === 'user' ? 'You' : 'Emma'}
+                                                            </div>
+                                                            {liveTranscript.text}
+                                                            <motion.span
+                                                                animate={{ opacity: [1, 0.4, 1] }}
+                                                                transition={{ duration: 0.8, repeat: Infinity }}
+                                                                className="inline-block w-1 h-3.5 bg-current ml-1 align-middle"
+                                                            />
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+
+                                            {/* 3. History - Reversed so index 0 is bottom */}
                                             <AnimatePresence initial={false}>
-                                                {messages.map((msg) => (
+                                                {[...messages].reverse().map((msg) => (
                                                     <MessageBubble key={msg.id} msg={msg} />
                                                 ))}
                                             </AnimatePresence>
-                                            {agentState === 'thinking' && (
-                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                                                    <div className="bg-slate-800 px-4 py-3 rounded-2xl rounded-bl-none border border-white/5 flex gap-1">
-                                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                                    </div>
-                                                </motion.div>
-                                            )}
                                         </div>
 
                                         {/* Controls */}
-                                        <div className="p-6 bg-black/80 backdrop-blur-[30px] border-t border-white/5 relative z-20 pb-10">
+                                        <div className="p-4 sm:p-6 bg-black/80 backdrop-blur-[30px] border-t border-white/5 relative z-20 pb-8 sm:pb-10">
                                             <div className="flex gap-2 items-center">
                                                 <div className="flex-1 relative">
                                                     <input

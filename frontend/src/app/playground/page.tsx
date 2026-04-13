@@ -95,9 +95,9 @@ export default function PlaygroundPage() {
         <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30">
             <BackgroundAmbience />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-12">
+            <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-12">
                 {/* Header */}
-                <header className="flex items-center justify-between gap-3 sm:gap-6 mb-8 sm:mb-12">
+                <header className="flex items-center justify-between gap-3 sm:gap-6 mb-4 sm:mb-12">
                     <div className="flex items-center gap-3 sm:gap-6">
                         <div className="flex items-center gap-2 sm:gap-4">
                             <Link href="/" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5">
