@@ -72,8 +72,12 @@ async def entrypoint(ctx: JobContext):
         # Transcript Save Logic
         try:
             if session_transcript:
-                os.makedirs("transcripts", exist_ok=True)
-                filepath = os.path.join("transcripts", f"transcript_{ctx.room.name}.txt")
+                # Force directory to be inside backend-python regardless of PM2's cwd
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                transcripts_dir = os.path.join(base_dir, "transcripts")
+                os.makedirs(transcripts_dir, exist_ok=True)
+                
+                filepath = os.path.join(transcripts_dir, f"transcript_{ctx.room.name}.txt")
                 with open(filepath, "w", encoding="utf-8") as f:
                     f.write(f"--- Session: {ctx.room.name} ---\n")
                     f.write(f"--- Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n\n")
