@@ -3,6 +3,7 @@ import os
 import asyncio
 from typing import AsyncIterable, Any
 from dotenv import load_dotenv
+from datetime import datetime
 
 from . import logger_config
 
@@ -25,6 +26,9 @@ from app.agent.prompts import DETERMINISTIC_SYSTEM_PROMPT
 logger = logging.getLogger("basic-agent")
 load_dotenv()
 
+active_sessions = 0
+MAX_SESSIONS = 5
+
 server = AgentServer()
 
 def prewarm(proc: JobProcess):
@@ -35,8 +39,48 @@ server.setup_fnc = prewarm
 
 @server.rtc_session()
 async def entrypoint(ctx: JobContext):
+    global active_sessions
     logger.info(f"[Worker] Connecting to room: {ctx.room.name}")
     ctx.log_context_fields = {"room": ctx.room.name}
+    
+    # Store transcript manually
+    session_transcript = []
+
+    def broadcast_ui_event(data: dict):
+        """Side-channel broadcast to the UI room."""
+        try:
+            payload = json.dumps(data)
+            asyncio.create_task(ctx.room.local_participant.publish_data(payload))
+        except Exception as e:
+            logger.error(f"UI Sync Error: {e}")
+
+    if active_sessions >= MAX_SESSIONS:
+        logger.warning(f"Capacity Full. Rejecting session for room: {ctx.room.name}")
+        await asyncio.sleep(0.5) # ensure connection gives time
+        broadcast_ui_event({"type": "error", "text": "Capacity reached. Please try again."})
+        return
+
+    active_sessions += 1
+    logger.info(f"[Worker] Session started. Active sessions: {active_sessions}")
+
+    @ctx.room.on("disconnected")
+    def _on_disconnected(*args, **kwargs):
+        global active_sessions
+        active_sessions = max(0, active_sessions - 1)
+        logger.info(f"[Worker] Room disconnected. Active sessions: {active_sessions}")
+        
+        # Transcript Save Logic
+        try:
+            if session_transcript:
+                os.makedirs("transcripts", exist_ok=True)
+                filepath = os.path.join("transcripts", f"transcript_{ctx.room.name}.txt")
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(f"--- Session: {ctx.room.name} ---\n")
+                    f.write(f"--- Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n\n")
+                    f.write("\n\n".join(session_transcript))
+                logger.info(f"[Worker] Saved transcript to {filepath}")
+        except Exception as e:
+            logger.error(f"[Worker] Failed to save transcript: {e}")
 
     # Low-Latency Plugin Initialization
     # We pass API keys explicitly to resolve gateway/inheritance issues
@@ -49,7 +93,7 @@ async def entrypoint(ctx: JobContext):
         temperature=0.5
     )
     
-    tts =  deepgram.TTS( model="aura-2-odysseus-en")
+    tts = deepgram.TTS(model="aura-2-odysseus-en")
 
     # In LiveKit v1.5.2, AgentSession is the primary orchestrator.
     # We define an Agent instance to hold the instructions.
@@ -60,14 +104,6 @@ async def entrypoint(ctx: JobContext):
         tts=tts,
         vad=ctx.proc.userdata["vad"]
     )
-
-    def broadcast_ui_event(data: dict):
-        """Side-channel broadcast to the UI room."""
-        try:
-            payload = json.dumps(data)
-            asyncio.create_task(ctx.room.local_participant.publish_data(payload))
-        except Exception as e:
-            logger.error(f"UI Sync Error: {e}")
 
     session = voice.AgentSession(
         stt=stt,
@@ -92,20 +128,7 @@ async def entrypoint(ctx: JobContext):
     def _on_usage_updated(usage):
         logger.debug(f"[Telemetry] Session Metrics: {usage}")
 
-    @session.on("speech_created")
-    def on_speech_created(ev: voice.SpeechCreatedEvent):
-        # Passive tap: Forward words as they are generated without touching audio pipe
-        async def _forward_transcript():
-            cumulative_text = ""
-            async for segment in ev.stt_stream:
-                cumulative_text += segment
-                broadcast_ui_event({
-                    "type": "text",
-                    "role": "assistant",
-                    "text": cumulative_text,
-                    "is_final": False
-                })
-        asyncio.create_task(_forward_transcript())
+
 
     @session.on("user_input_transcribed")
     def on_user_transcript(ev: voice.UserInputTranscribedEvent):
@@ -121,12 +144,16 @@ async def entrypoint(ctx: JobContext):
     @session.on("conversation_item_added")
     def on_item_added(ev: voice.ConversationItemAddedEvent):
         # We broadcast the final context item to ensure bubble synchronization
-        if isinstance(ev.item, llm.ChatMessage) and ev.item.role == "assistant":
+        if isinstance(ev.item, llm.ChatMessage):
             content = ev.item.content
             if isinstance(content, list):
                 content = " ".join([c if isinstance(c, str) else str(c) for c in content])
             
-            if content:
+            if content and ev.item.role in ["user", "assistant"]:
+                display_role = "Emma" if ev.item.role == "assistant" else "User"
+                session_transcript.append(f"{display_role}: {content}")
+                
+            if content and ev.item.role == "assistant":
                 broadcast_ui_event({
                     "type": "text",
                     "role": "assistant",
@@ -151,10 +178,16 @@ async def entrypoint(ctx: JobContext):
 
     # Start the session with the defined agent and room context
     # This binds all plugins into a high-performance streaming loop
-    await session.start(agent=emma_agent, room=ctx.room)
-    
-    # Emma's Initial Greeting
-    session.say("Hello! This is Emma. How can I help you today?", allow_interruptions=True)
+    try:
+        await session.start(agent=emma_agent, room=ctx.room)
+        
+        # Emma's Initial Greeting
+        session.say("Hello! This is Emma. How can I help you today?", allow_interruptions=True)
+    except Exception as e:
+        logger.error(f"[Worker] Critical voice engine failure: {e}")
+        broadcast_ui_event({"type": "error", "text": "Voice engine offline. Please try again."})
+        # Gracefully handle the crash without killing PM2
+        await ctx.room.disconnect()
 
 if __name__ == "__main__":
     cli.run_app(server)

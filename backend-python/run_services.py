@@ -70,32 +70,20 @@ async def main():
     import gc
     gc.collect()
     
+    # Use ALL_COMPLETED so that if the text API fails, the Voice Agent keeps running independently
     done, pending = await asyncio.wait(
         tasks, 
-        return_when=asyncio.FIRST_EXCEPTION
+        return_when=asyncio.ALL_COMPLETED
     )
     
-    # Clean up pending tasks
-    for task in pending:
-        task.cancel()
-        
-    # Check if any task failed
+    # Check if tasks failed (they shouldn't normally finish unless crashed or killed)
     for task in done:
         if task.exception():
-            logger.error(f"A critical service failed: {task.exception()}", exc_info=True)
-            # Re-raise to ensure the process exits with non-zero code
-            raise task.exception()
+            logger.error(f"A service failed: {task.exception()}", exc_info=True)
         else:
-            # Get the name of the task that finished
-            task_name = "Unknown"
-            if "run_fastapi_server" in str(task.get_coro()):
-                task_name = "FastAPI Server"
-            elif "run_livekit_worker" in str(task.get_coro()):
-                task_name = "LiveKit Worker"
-            logger.warning(f"Service '{task_name}' finished unexpectedly.")
+            logger.warning(f"A service finished unexpectedly.")
             
-    # If we get here, one of the tasks finished unexpectedly
-    logger.warning("One of the unified services stopped unexpectedly.")
+    logger.warning("All services stopped.")
     sys.exit(1)
 
 

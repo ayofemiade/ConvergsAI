@@ -3,6 +3,8 @@
  * Handles all communication with Node.js API Gateway
  */
 
+import { v4 as uuidv4 } from 'uuid';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export interface MessageRequest {
@@ -67,17 +69,11 @@ class APIClient {
      * Create a new conversation session
      */
     async createSession(customPrompt?: string): Promise<{ session_id: string }> {
-        const response = await this.fetchWithHeaders('/api/session/new', {
-            method: 'POST',
-            body: JSON.stringify(customPrompt ? { custom_prompt: customPrompt } : {}),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to create session: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        return { session_id: data.session_id };
+        // Option A: Decoupled Voice Engine
+        // Bypassing /api/session/new to avoid relying on the broken Python text API (main.py).
+        // A unique, trackable session ID is still generated for every single call.
+        const session_id = `phone_${uuidv4()}`;
+        return { session_id };
     }
 
     /**

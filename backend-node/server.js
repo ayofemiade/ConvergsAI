@@ -109,20 +109,20 @@ app.post('/api/session/new', async (req, res) => {
     console.log(`DEBUG: Requesting new session from Python AI: ${PYTHON_AI_URL}/session/new`);
 
     const response = await axios.post(`${PYTHON_AI_URL}/session/new`, payload, {
-      timeout: 10000 // Increased to 10s to allow for Fly.io wake-up
+      timeout: 10000 
     });
 
     console.log(`DEBUG: Python AI responded: ${response.status} - Session ID: ${response.data.session_id}`);
     res.json(response.data);
   } catch (error) {
-    console.warn('⚠️ Python AI backend unavailable, using local fallback...');
+    console.error('CRITICAL: Python AI backend (main.py) is unavailable.', error.message);
 
-    // Fallback: Generate a local session ID so the call can still start
-    const fallback_id = `local_${uuidv4().slice(0, 8)}`;
-    res.json({
-      success: true,
-      session_id: fallback_id,
-      message: "Fallback session created (Python API offline)"
+    // Option A: Removed the silent fake fallback. If a client relies on this endpoint,
+    // they should get an honest error so that the developers know the Text API is down.
+    res.status(503).json({
+      success: false,
+      error: "Service Unavailable",
+      message: "The Python Text API is currently disabled or offline."
     });
   }
 });
@@ -346,15 +346,13 @@ const server = app.listen(PORT, () => {
 ╚═══════════════════════════════════════╝
   `);
 
-  // Check Python backend connection
+  // Notice: Python backend connection check removed.
+  // In our decoupled Option A architecture, the Node API Gateway purely serves 
+  // as a LiveKit Token generator, and no longer relies on the Python Text API (main.py).
+  /* 
   axios.get(`${PYTHON_AI_URL}/health`, { timeout: 5000 })
-    .then(() => {
-      console.log('✅ Connected to Python AI backend');
-    })
-    .catch(() => {
-      console.log('⚠️  Warning: Could not connect to Python AI backend');
-      console.log('   Make sure the Python service is running on', PYTHON_AI_URL);
-    });
+    .then(...)
+  */
 });
 
 // Graceful Shutdown
