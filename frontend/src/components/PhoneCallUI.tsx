@@ -235,6 +235,14 @@ export default function PhoneCallUI({
                 const str = new TextDecoder().decode(payload);
                 try {
                     const data = JSON.parse(str);
+                    
+                    if (data.type === 'error') {
+                        alert(data.text || "Voice engine unavailable. Please try again.");
+                        cleanup();
+                        setCallState('idle');
+                        return;
+                    }
+
                     if (data.type === 'transcript' || data.type === 'text') {
                         const isFinal = data.is_final !== false;
                         if (isFinal) {
