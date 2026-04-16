@@ -27,7 +27,7 @@ logger = logging.getLogger("basic-agent")
 load_dotenv()
 
 active_sessions = 0
-MAX_SESSIONS = 1
+MAX_SESSIONS = 5
 
 server = AgentServer()
 
