@@ -46,23 +46,18 @@ async def entrypoint(ctx: JobContext):
     # Store transcript manually
     session_transcript = []
 
-    async def broadcast_ui_event_async(data: dict):
+    def broadcast_ui_event(data: dict):
+        """Side-channel broadcast to the UI room."""
         try:
             payload = json.dumps(data)
-            await ctx.room.local_participant.publish_data(payload)
+            asyncio.create_task(ctx.room.local_participant.publish_data(payload))
         except Exception as e:
             logger.error(f"UI Sync Error: {e}")
 
-    def broadcast_ui_event(data: dict):
-        """Side-channel broadcast to the UI room."""
-        asyncio.create_task(broadcast_ui_event_async(data))
-
     if active_sessions >= MAX_SESSIONS:
         logger.warning(f"Capacity Full. Rejecting session for room: {ctx.room.name}")
-        await ctx.connect()
-        await broadcast_ui_event_async({"type": "error", "text": "Capacity reached. Please try again."})
-        await asyncio.sleep(1.0) # wait a full second to guarantee delivery via socket
-        await ctx.room.disconnect()
+        await asyncio.sleep(0.5) # ensure connection gives time
+        broadcast_ui_event({"type": "error", "text": "Capacity reached. Please try again."})
         return
 
     active_sessions += 1
@@ -191,9 +186,7 @@ async def entrypoint(ctx: JobContext):
         await session.start(agent=emma_agent, room=ctx.room)
         
         # Emma's Initial Greeting
-        greeting = "Hello! This is Emma. How can I help you today?"
-        broadcast_ui_event({"type": "text", "role": "assistant", "text": greeting, "is_final": True})
-        session.say(greeting, allow_interruptions=True)
+        session.say("Hello! This is Emma. How can I help you today?", allow_interruptions=True)
     except Exception as e:
         logger.error(f"[Worker] Critical voice engine failure: {e}")
         broadcast_ui_event({"type": "error", "text": "Voice engine offline. Please try again."})
