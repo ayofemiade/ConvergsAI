@@ -1,20 +1,18 @@
 import logging
 import os
 import asyncio
-from typing import AsyncIterable, Any
 from dotenv import load_dotenv
 from datetime import datetime
 
 from . import logger_config
 
 from livekit import rtc
-from livekit.plugins import silero, openai, deepgram, cartesia
+from livekit.plugins import silero, openai, deepgram
 from livekit.agents import (
     AgentServer,
     JobContext,
     JobProcess,
     cli,
-    metrics,
     voice,
     llm,
 )
@@ -94,19 +92,19 @@ async def entrypoint(ctx: JobContext):
         model="llama3.1-8b",
         base_url="https://api.cerebras.ai/v1",
         api_key=os.environ.get("CEREBRAS_API_KEY"),
-        temperature=0.5
+        temperature=0.5,
+        # Cap output to enforce prompt brevity and reduce tail latency.
+        # 80 tokens ≈ 60 words — more than enough for 1-2 sentence replies.
+        max_completion_tokens=80,
     )
     
     tts = deepgram.TTS(model="aura-2-odysseus-en")
 
-    # In LiveKit v1.5.2, AgentSession is the primary orchestrator.
-    # We define an Agent instance to hold the instructions.
+    # AgentSession is the primary orchestrator — it owns the plugin lifecycle.
+    # voice.Agent is a prompt/tool container only — do NOT pass plugins to it.
+    # Passing plugins to both caused duplicate Deepgram connections → audio cracking.
     emma_agent = voice.Agent(
         instructions=DETERMINISTIC_SYSTEM_PROMPT,
-        stt=stt,
-        llm=agent_llm,
-        tts=tts,
-        vad=ctx.proc.userdata["vad"]
     )
 
     session = voice.AgentSession(
@@ -115,16 +113,9 @@ async def entrypoint(ctx: JobContext):
         tts=tts,
         vad=ctx.proc.userdata["vad"],
         allow_interruptions=True,
-        # Conservative latency for recovery (400ms)
-        turn_handling={
-            "endpointing": {
-                "min_delay": 0.4,
-                "max_delay": 3.0,
-            },
-            "interruption": {
-                "min_duration": 0.3,
-            }
-        }
+        # min_endpointing_delay is the correct LiveKit API parameter (direct float, not a dict).
+        # 400ms: agent won't cut in until the user has been silent for 400ms.
+        min_endpointing_delay=0.4,
     )
 
     # Metrics collection for engineering audit
